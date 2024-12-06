@@ -1,3 +1,39 @@
+@import url("https://fonts.googleapis.com/css2?family=Doto:wght@100..900&family=Exo+2:ital,wght@0,100..900;1,100..900&family=Hubot+Sans:ital,wght@0,200..900;1,200..900&family=Lacquer&family=Nunito:ital,wght@0,200..1000;1,200..1000&family=Sour+Gummy:ital,wght@0,100..900;1,100..900&display=swap");
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+}
+
+
+.doto-font {
+  font-family: "Doto", sans-serif;
+}
+
+.exo-font {
+  font-family: "Exo 2", sans-serif;
+}
+
+.hubot-font {
+  font-family: "Hubot Sans", sans-serif;
+}
+
+.lacquer-font {
+  font-family: "Lacquer", sans-serif;
+}
+
+.nunito-font {
+  font-family: "Nunito", sans-serif;
+}
+
+.sour-gummy-font {
+  font-family: "Sour Gummy", sans-serif;
+}
