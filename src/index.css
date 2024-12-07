@@ -37,3 +37,8 @@ html, body {
 .sour-gummy-font {
   font-family: "Sour Gummy", sans-serif;
 }
+
+
+::-webkit-scrollbar{
+  display: none;
+}

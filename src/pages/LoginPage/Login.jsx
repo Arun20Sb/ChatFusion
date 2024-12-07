@@ -68,6 +68,7 @@ function Login() {
             className="py-2 px-3 rounded-sm text-gray-800"
           />
           <button
+            onClick={() => navigate("/chat")}
             type="submit"
             className="border-2 bg-sky-500 hover:bg-sky-600 active:translate-y-1 shadow-md duration-200 font-bold text-lg py-2 px-4 inline-block rounded cursor-pointer transition-all"
           >
