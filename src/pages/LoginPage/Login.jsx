@@ -1,36 +1,21 @@
-import { useGoogleLogin } from "@react-oauth/google";
 import { useState } from "react";
-import { FcGoogle } from "react-icons/fc";
-import { useNavigate } from "react-router-dom";
+import { SignUp, login } from "../../config/FirebaseConfig";
 
 function Login() {
+  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
   const [SignInUp, setSignInUp] = useState("Sign Up");
-  const navigate = useNavigate();
 
-  // LOGIN:
-  const login = useGoogleLogin({
-    onSuccess: (tokenResponse) => {
-      getUserProfile(tokenResponse);
-    },
-    onError: (error) => console.log(error),
-  });
-
-  const getUserProfile = async (tokenInfo) => {
-    fetch(
-      `https://www.googleapis.com/oauth2/v1/userinfo?access_token=${tokenInfo?.access_token}`,
-      {
-        headers: {
-          Authorization: `Bearer ${tokenInfo?.access_token}`,
-          Accept: "application/json",
-        },
-      }
-    )
-      .then((res) => res.json())
-      .then((data) => {
-        console.log("User Info: ", JSON.stringify(data));
-        navigate("/chat");
-      })
-      .catch((error) => console.error("Error fetching user data: ", error));
+  // Form Submit:
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (SignInUp === "Sign Up") {
+      SignUp(username, email, password);
+    } else {
+      login(email, password);
+    }
   };
 
   return (
@@ -44,7 +29,7 @@ function Login() {
       />
       <div className="bg-gray-900 text-gray-200 rounded-lg lg:w-[323px]">
         <form
-          onSubmit={(e) => e.preventDefault()}
+          onSubmit={handleSubmit}
           className="flex flex-col border-2 w-full justify-center gap-4 py-6 px-7 leading-7 rounded-lg"
         >
           <h1 className="text-2xl">{SignInUp}</h1>
@@ -52,7 +37,10 @@ function Login() {
             <input
               type="text"
               placeholder="username"
+              value={username}
               className="py-2 px-3 rounded-sm text-gray-800"
+              onChange={(e) => setUsername(e.target.value)}
+              required
             />
           ) : (
             <></>
@@ -60,22 +48,27 @@ function Login() {
           <input
             type="email"
             placeholder="Email address"
+            value={email}
             className="py-2 px-3 rounded-sm text-gray-800"
+            onChange={(e) => setEmail(e.target.value)}
+            required
           />
           <input
             type="password"
             placeholder="password"
+            value={password}
             className="py-2 px-3 rounded-sm text-gray-800"
+            onChange={(e) => setPassword(e.target.value)}
+            required
           />
           <button
-            onClick={() => navigate("/chat")}
             type="submit"
             className="border-2 bg-sky-500 hover:bg-sky-600 active:translate-y-1 shadow-md duration-200 font-bold text-lg py-2 px-4 inline-block rounded cursor-pointer transition-all"
           >
             {SignInUp === "Sign Up" ? "Create account" : "Login"}
           </button>
           <label htmlFor="login-terms" className="flex justify-center text-sm">
-            <input type="checkbox" name="login-terms" />
+            <input type="checkbox" name="login-terms" required/>
             <span className="px-2">
               Agree to our Terms of Service and Privacy Policy.
             </span>
@@ -93,24 +86,6 @@ function Login() {
               {SignInUp === "Sign Up" ? "Log in here." : "Sign up here."}
             </span>
           </p>
-
-          <div className="flex flex-col items-center">
-            <h2 className="mb-3">OR</h2>
-            <button
-              type="button"
-              className="border-2 bg-gray-700 hover:bg-gray-800 active:translate-y-1 shadow-md duration-200 font-bold text-lg py-2 px-7 rounded cursor-pointer transition-all flex items-center gap-2 justify-center"
-              onClick={login}
-            >
-              <FcGoogle />
-              {SignInUp === "Sign Up" ? (
-                <p>Sign Up with Google</p>
-              ) : (
-                <>
-                  <p>Log In with Google</p>
-                </>
-              )}
-            </button>
-          </div>
         </form>
       </div>
     </div>

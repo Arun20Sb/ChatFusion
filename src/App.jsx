@@ -1,20 +1,32 @@
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { Route, Routes, useNavigate } from "react-router-dom";
 import Chat from "./pages/ChatPage/Chat";
 import Login from "./pages/LoginPage/Login";
 import Profile from "./pages/ProfilePage/Profile";
-import { GoogleOAuthProvider } from "@react-oauth/google";
+import { ToastContainer } from "react-toastify";
+import { useEffect } from "react";
+import { onAuthStateChanged } from "firebase/auth";
+import { auth } from "./config/FirebaseConfig";
 
 function App() {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        navigate("/chat");
+      } else navigate("/");
+    });
+  }, [navigate]);
+
   return (
-    <BrowserRouter>
-      <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_AUTH_CLIENT_ID}>
-        <Routes>
-          <Route path="/" element={<Login />} />
-          <Route path="/chat" element={<Chat />} />
-          <Route path="/profile" element={<Profile />} />
-        </Routes>
-      </GoogleOAuthProvider>
-    </BrowserRouter>
+    <>
+      <ToastContainer />
+      <Routes>
+        <Route path="/" element={<Login />} />
+        <Route path="/chat" element={<Chat />} />
+        <Route path="/profile" element={<Profile />} />
+      </Routes>
+    </>
   );
 }
 

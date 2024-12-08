@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { logout } from "../../config/FirebaseConfig";
 
 const friends = [
   {
@@ -77,7 +78,9 @@ function LeftChat() {
               alt="ChatFusion"
               className="w-12 h-12 inline-block"
             />
-            <span className="text-2xl font-semibold">ChatFusion</span>
+            <span className="text-2xl font-semibold active:animate-bounce cursor-pointer">
+              ChatFusion
+            </span>
           </div>
           <span>
             <img
@@ -98,7 +101,7 @@ function LeftChat() {
               <hr />
               <h3
                 className="border-b-2 border-gray-900 pb-1 cursor-pointer"
-                onClick={() => navigate("/")}
+                onClick={() => logout()}
               >
                 LogOut
               </h3>

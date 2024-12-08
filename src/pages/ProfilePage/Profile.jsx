@@ -1,7 +1,10 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 function Profile() {
   const navigate = useNavigate();
+
+  const [profileImg, setProfileImg] = useState(false);
 
   return (
     <div className="h-screen w-full bg-slate-300 flex items-center justify-center">
@@ -13,17 +16,22 @@ function Profile() {
           <h3 className="text-4xl mt-4 mb-7 font-bold underline">
             My Profile Details
           </h3>
-          <label htmlFor="myImage" className="mb-7 text-xl">
+          <label htmlFor="myImage" className="mb-7 text-xl cursor-pointer">
             <input
               type="file"
               id="myImage"
               accept=".jpg ,.jpeg , .png"
               hidden
+              onChange={(e) => setProfileImg(e.target.files[0])}
             />
             <img
-              src="https://img.icons8.com/?size=100&id=6oAufRlrYpcN&format=png&color=000000"
+              src={
+                profileImg
+                  ? URL.createObjectURL(profileImg)
+                  : `https://img.icons8.com/?size=100&id=6oAufRlrYpcN&format=png&color=000000`
+              }
               alt=""
-              className="w-24 h-24 inline-block mx-4 mr-7 bg-purple-300 p-2 rounded-full"
+              className="w-28 h-28 inline-block mx-4 mr-7 rounded-full object-cover bg-none border-4 border-gray-300"
             />
             Upload your Image here
           </label>
@@ -31,12 +39,12 @@ function Profile() {
             type="text"
             placeholder="Enter Your name bro"
             required
-            className="p-2 rounded-sm border-none outline-none text-gray-900"
+            className="py-2 px-3 rounded-sm border-none outline-none text-gray-900"
           />
           <textarea
             placeholder="Write something about yourself.."
             required
-            className="p-2 rounded-sm border-none outline-none text-gray-900"
+            className="py-2 px-3 rounded-sm border-none outline-none text-gray-900"
           ></textarea>
           <button
             type="submit"
@@ -46,11 +54,22 @@ function Profile() {
             Save
           </button>
         </form>
-        <img
-          src="/profile2.jpg"
-          alt=""
-          className="h-full object-cover rounded-tr-xl rounded-br-xl"
-        />
+        <div className="relative">
+          <img
+            src="/profile2.jpg"
+            alt=""
+            className="h-full absolute z-10 rounded-tr-xl rounded-br-xl object-cover"
+          />
+          <img
+            src={
+              profileImg
+                ? URL.createObjectURL(profileImg)
+                : `https://img.icons8.com/?size=100&id=6oAufRlrYpcN&format=png&color=000000`
+            }
+            alt=""
+            className="relative z-20 mx-auto top-1/2 transform -translate-y-1/2 rounded-full w-60 h-60 object-cover border-4 border-purple-500 bg-gray-900"
+          />
+        </div>
       </div>
     </div>
   );
