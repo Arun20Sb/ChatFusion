@@ -99,7 +99,7 @@ function LeftChat() {
         <ul>
           {friends.map((friend, index) => (
             <li key={index}>
-              <div className="flex items-center justify-start gap-3 py-2 px-4  hover:bg-gray-700 cursor-pointer">
+              <div className="flex items-center justify-start gap-3 py-2 px-4 hover:bg-gray-700 cursor-pointer">
                 <img
                   src={friend.image}
                   alt={friend.name}
