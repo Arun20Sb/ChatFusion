@@ -2,7 +2,7 @@ function CenterChat() {
   return (
     <div className="relative border-b-2 border-gray-900 flex flex-col h-[85vh]">
       {/* User Details */}
-      <div className="flex justify-between items-center mt-1 border-b-2 w-full py-2 px-3">
+      <div className="flex justify-between items-center mt-0 border-b-2 w-full py-3 px-3 border-gray-200 border-t-gray-950 border-2">
         <div className="flex items-center gap-2">
           <img
             src="https://img.icons8.com/?size=100&id=V8tVabAreXgU&format=png&color=000000"

@@ -15,30 +15,28 @@ function RightChat() {
       <h1 className="relative w-auto doto-font py-1 px-4 text-xl bg-gray-100 text-gray-900 font-bold">
         Media
       </h1>
-      <div className="overflow-y-scroll my-2 relative mx-2 flex flex-row flex-wrap justify-evenly h-full">
+      <div className="overflow-y-scroll m-5 max-h-48 grid grid-cols-[1fr_1fr_1fr] gap-5 mt-8">
         <img
           src="/sample.jpeg"
           alt=""
-          className="w-20 h-20 rounded-md mx-1 my-1"
+          className="w-20 rounded-md cursor-pointer hover:scale-105 duration-200 transition-all"
         />
         <img
           src="/sample.jpeg"
           alt=""
-          className="w-20 h-20 rounded-md mx-1 my-1"
+          className="w-20 rounded-md cursor-pointer hover:scale-105 duration-200 transition-all"
         />
         <img
           src="/sample.jpeg"
           alt=""
-          className="w-20 h-20 rounded-md mx-1 my-1"
+          className="w-20 rounded-md cursor-pointer hover:scale-105 duration-200 transition-all"
         />
         <img
           src="/sample.jpeg"
           alt=""
-          className="w-20 h-20 rounded-md mx-1 my-1"
+          className="w-20 rounded-md cursor-pointer hover:scale-105 duration-200 transition-all"
         />
       </div>
-      {/* Logout view */}
-      <div></div>
     </div>
   );
 }

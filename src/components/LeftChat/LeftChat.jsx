@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 const friends = [
   {
@@ -63,6 +64,7 @@ const friends = [
 
 function LeftChat() {
   const [show, setShow] = useState(false);
+  const navigate = useNavigate();
 
   return (
     <div className="flex relative border-2 border-gray-500 flex-col sour-gummy-font h-[85vh]">
@@ -86,12 +88,20 @@ function LeftChat() {
             />
           </span>
           {show && (
-            <div className="absolute right-10 top-14 bg-gray-200 text-gray-900 exo-font text-lg font-semibold py-1 px-2  border-2 border-gray-950 rounded-md rounded-tr-none">
-              <h3 className="border-b-2 border-gray-900 pb-1 cursor-pointer">
+            <div className="absolute right-10 top-14 bg-gray-200 text-gray-900 exo-font text-lg font-semibold py-2 px-3  border-2 border-gray-950 rounded-md rounded-tr-none">
+              <h3
+                className="border-b-2 border-gray-900 pb-1 cursor-pointer"
+                onClick={() => navigate("/profile")}
+              >
                 My Profile
               </h3>
               <hr />
-              <h3 className="border-b-2 border-gray-900 pb-1 cursor-pointer">LogOut</h3>
+              <h3
+                className="border-b-2 border-gray-900 pb-1 cursor-pointer"
+                onClick={() => navigate("/")}
+              >
+                LogOut
+              </h3>
               <hr />
               <div className="flex gap-2 items-center">
                 <h3 className="cursor-pointer">Setting</h3>
