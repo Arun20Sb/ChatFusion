@@ -75,7 +75,7 @@ function LeftChat() {
               alt="ChatFusion"
               className="w-12 h-12 inline-block"
             />
-            <span className="text-2xl font-semibold">ChatFusion</span>
+            <span className="text-2xl font-semibold">ProNess</span>
           </div>
           <span>
             <img
@@ -91,16 +91,7 @@ function LeftChat() {
                 My Profile
               </h3>
               <hr />
-              <h3 className="border-b-2 border-gray-900 pb-1 cursor-pointer">LogOut</h3>
-              <hr />
-              <div className="flex gap-2 items-center">
-                <h3 className="cursor-pointer">Setting</h3>
-                <img
-                  src="https://img.icons8.com/?size=100&id=2969&format=png&color=000000"
-                  alt=""
-                  className="w-5 h-4"
-                />
-              </div>
+              <h3 className="cursor-pointer">LogOut</h3>
             </div>
           )}
         </div>
