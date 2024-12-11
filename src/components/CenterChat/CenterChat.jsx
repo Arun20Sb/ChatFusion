@@ -19,7 +19,15 @@ function CenterChat() {
       </div>
 
       {/* Chat section start*/}
-      <div className="bg-violet-300 h-full w-full p-5 relative overflow-y-scroll flex flex-col-reverse">
+      <div
+        className="bg-violet-300 h-full w-full p-5 relative overflow-y-scroll flex flex-col-reverse"
+        style={{
+          backgroundImage: `url("/anime7.jpg")`,
+          backgroundPosition: "center",
+          backgroundRepeat: "no-repeat",
+          backgroundSize: "cover",
+        }}
+      >
         {/* Sender text*/}
         <div className="flex flex-row justify-end gap-2 text-gray-900 sour-gummy-font relative">
           <p className="text-base leading-[1.2rem] bg-gray-300 rounded-br-none rounded-2xl py-1 px-2 w-1/2 mb-8">
@@ -54,8 +62,8 @@ function CenterChat() {
         {/* Receiver */}
         <div className="flex flex-row-reverse justify-end gap-2 text-gray-900 sour-gummy-font relative">
           <p className="text-base leading-[1.2rem] bg-gray-300 rounded-bl-none rounded-2xl py-1 px-2 w-1/2 mb-8">
-            Yo 👊🏻, ek anime suggest krr koi? fantasy ya scifi, abhi just dandadan
-            finish kri mene?
+            Yo 👊🏻, ek anime suggest krr koi? fantasy ya scifi, abhi just
+            dandadan finish kri mene?
           </p>
           <div className="flex flex-col justify-end items-center relative">
             <img

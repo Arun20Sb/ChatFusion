@@ -1,55 +1,109 @@
-import { useState } from "react";
+import { onAuthStateChanged } from "firebase/auth";
+import { useContext, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { auth, db } from "../../config/FirebaseConfig";
+import { doc, getDoc, updateDoc } from "firebase/firestore";
+import { toast } from "react-toastify";
+import { AppContext } from "../../context/AppContextProvider";
 
 function Profile() {
   const navigate = useNavigate();
 
-  const [profileImg, setProfileImg] = useState(false);
+  const [name, setName] = useState("");
+  const [emoji, setEmoji] = useState("");
+  const [bio, setBio] = useState("");
+  const [uid, setUid] = useState("");
+
+  const { setUserData } = useContext(AppContext);
+
+  const profileUpdate = async (e) => {
+    e.preventDefault();
+    try {
+      if (!emoji) {
+        toast.error("Upload profile picture😴");
+      }
+      const docRef = doc(db, "USERS", uid);
+      if (emoji) {
+        await updateDoc(docRef, {
+          avatar: emoji,
+          bio: bio,
+          name: name,
+        });
+        toast.success("Profile updated!");
+      }
+      const snap = await getDoc(docRef);
+      setUserData(snap.data);
+      navigate("/chat");
+    } catch (error) {
+      console.error(error);
+      toast.error("Error updating profile");
+    }
+  };
+
+  // ----------
+  useEffect(() => {
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        setUid(user.uid);
+        const docRef = doc(db, "USERS", user.uid);
+        const docSnap = await getDoc(docRef);
+
+        if (docSnap.data().name) {
+          setName(docSnap.data().name);
+        }
+        if (docSnap.data().bio) {
+          setBio(docSnap.data().bio);
+        }
+        if (docSnap.data().avatar) {
+          setEmoji(docSnap.data().avatar);
+        }
+      } else {
+        navigate("/");
+      }
+    });
+  });
+  // ----------
 
   return (
-    <div className="h-screen w-full bg-slate-300 flex items-center justify-center">
+    <div className="h-screen w-full bg-slate-300 flex items-center lacquer-font justify-center">
       <div className="w-[70%] h-[85vh] max-sm:block bg-gray-950 text-gray-300 mx-auto rounded-xl grid grid-cols-2 border-2 border-gray-950">
         <form
-          onSubmit={(e) => e.preventDefault()}
-          className="bg-gray-900 flex flex-col gap-5 px-7 py-7 lacquer-font rounded-tl-lg rounded-bl-xl "
+          onSubmit={profileUpdate}
+          className="bg-gray-900 flex flex-col gap-5 px-7 py-7 rounded-tl-lg rounded-bl-xl "
         >
           <h3 className="text-4xl mt-4 mb-7 font-bold underline">
             My Profile Details
           </h3>
-          <label htmlFor="myImage" className="mb-7 text-xl cursor-pointer">
+          <label
+            htmlFor="emojiInput"
+            className="mb-7 text-xl cursor-pointer flex gap-0 justify-center items-center"
+          >
             <input
-              type="file"
-              id="myImage"
-              accept=".jpg ,.jpeg , .png"
-              hidden
-              onChange={(e) => setProfileImg(e.target.files[0])}
+              type="text"
+              maxLength="2"
+              pattern="[\p{Emoji}]"
+              id="emojiInput"
+              className="border-2 mr-3 rounded-full w-20 h-20 text-4xl text-center leading-tight outline-none text-gray-900"
+              onChange={(e) => setEmoji(e.target.value)}
             />
-            <img
-              src={
-                profileImg
-                  ? URL.createObjectURL(profileImg)
-                  : `https://img.icons8.com/?size=100&id=6oAufRlrYpcN&format=png&color=000000`
-              }
-              alt=""
-              className="w-28 h-28 inline-block mx-4 mr-7 rounded-full object-cover bg-none border-4 border-gray-300"
-            />
-            Upload your Image here
+            👈🏻 Enter your emoji here
           </label>
           <input
             type="text"
+            onChange={(e) => setName(e.target.value)}
             placeholder="Enter Your name bro"
             required
             className="py-2 px-3 rounded-sm border-none outline-none text-gray-900"
           />
           <textarea
             placeholder="Write something about yourself.."
+            onChange={(e) => setBio(e.target.value)}
             required
             className="py-2 px-3 rounded-sm border-none outline-none text-gray-900"
           ></textarea>
           <button
             type="submit"
             className="border-2 py-2 bg-purple-800 hover:border-gray-400 active:translate-y-1 shadow-md duration-200 font-bold text-xl px-7 rounded cursor-pointer transition-all flex items-center gap-2 justify-center"
-            onClick={() => navigate("/chat")}
           >
             Save
           </button>
@@ -58,16 +112,13 @@ function Profile() {
           <img
             src="/profile2.jpg"
             alt=""
-            className="h-full absolute z-10 rounded-tr-xl rounded-br-xl object-cover"
+            className="h-full w-full absolute z-10 rounded-tr-xl rounded-br-xl object-cover"
           />
-          <img
-            src={
-              profileImg
-                ? URL.createObjectURL(profileImg)
-                : `https://img.icons8.com/?size=100&id=6oAufRlrYpcN&format=png&color=000000`
-            }
-            alt=""
-            className="relative z-20 mx-auto top-1/2 transform -translate-y-1/2 rounded-full w-60 h-60 object-cover border-4 border-purple-500 bg-gray-900"
+          <input
+            type="text"
+            value={emoji}
+            readOnly
+            className="absolute z-20 left-1/2 -translate-x-1/2 top-1/2 transform -translate-y-1/2 rounded-full w-60 h-60 object-cover border-4 border-purple-500 bg-gray-900 text-8xl text-center"
           />
         </div>
       </div>

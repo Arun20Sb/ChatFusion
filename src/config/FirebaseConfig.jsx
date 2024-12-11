@@ -41,15 +41,16 @@ const SignUp = async (username, email, password) => {
       id: user.uid,
       username: username.toLowerCase(),
       email,
-      password,
       name: "",
       avatar: "",
-      description: "bhai kuch kam kaj ni h kya",
-      lastseen: Date.now(),
+      bio: "",
+      password,
+      lastSeen: Date.now(),
     });
     await setDoc(doc(db, "CHATS", user.uid), {
-      chatsData: [],
+      chatData: [],
     });
+
     toast("User created successfully! 🎉");
   } catch (error) {
     console.log(error);
