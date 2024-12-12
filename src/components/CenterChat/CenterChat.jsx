@@ -1,15 +1,77 @@
+import { useContext, useEffect, useState } from "react";
+import { AppContext } from "../../context/AppContextProvider";
+import ChatPlaceholder from "./ChatPlaceHolder";
+import {
+  arrayUnion,
+  doc,
+  getDoc,
+  onSnapshot,
+  updateDoc,
+} from "firebase/firestore";
+import { db } from "../../config/FirebaseConfig";
+
 function CenterChat() {
-  return (
+  const { userData, messagesId, chatUser, messages, setMessages } =
+    useContext(AppContext);
+
+  const [input, setInput] = useState("");
+
+  const sendMsg = async () => {
+    try {
+      if (input && messagesId) {
+        await updateDoc(doc(db, "MESSAGES", messagesId), {
+          messages: arrayUnion({
+            sId: userData.id,
+            text: input,
+            createdAt: new Date(),
+          }),
+        });
+
+        const userIds = [chatUser.rId, userData.id];
+        userIds.forEach(async (id) => {
+          const userChatsRef = doc(db, "CHATS", "id");
+          const userChatsSnapshot = await getDoc(userChatsRef);
+
+          if (userChatsSnapshot.exists()) {
+            const userChatsData = userChatsSnapshot.data();
+            const chatIndex = userChatsData.chatData.findIndex(
+              (c) => c.messagesId === messagesId
+            );
+            userChatsData.chatData[chatIndex].lastMessage = input.slice(0, 27);
+
+            userChatsData.chatData[chatIndex].upd
+          }
+        });
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  // Load messages:
+  useEffect(() => {
+    if (messagesId) {
+      const unSubscribe = onSnapshot(doc(db, "MESSAGES", messagesId), (res) => {
+        setMessages(res.data().messages.reverse());
+        console.log(res.data().messages.reverse());
+      });
+
+      return () => unSubscribe();
+    }
+  }, [messagesId, setMessages]);
+
+  return chatUser ? (
     <div className="relative border-b-2 border-gray-900 flex flex-col h-[85vh]">
       {/* User Details */}
       <div className="flex justify-between items-center mt-0 border-b-2 w-full py-3 px-3 border-gray-200 border-t-gray-950 border-2">
         <div className="flex items-center gap-2">
-          <img
-            src="https://img.icons8.com/?size=100&id=V8tVabAreXgU&format=png&color=000000"
-            alt=""
-            className="w-10 h-10 bg-violet-400 rounded-full"
+          <input
+            type="text"
+            readOnly
+            value={chatUser.userData.avatar || ""}
+            className="w-10 h-10 bg-gray-300 rounded-full text-center text-2xl"
           />
-          <h2>Arun Singh Bisht</h2>
+          <h2>{chatUser.userData.name}</h2>
         </div>
         <img
           src="https://img.icons8.com/?size=100&id=iO8CP6EX5jq2&format=png&color=000000"
@@ -81,6 +143,8 @@ function CenterChat() {
       <div className="bg-gray-300 text-gray-900 exo-font  left-0 right-0 w-full">
         <div className="flex gap-2 items-center justify-end py-0 px-3">
           <input
+            onChange={(e) => setInput(e.target.value)}
+            value={input}
             type="text"
             placeholder="Send a message"
             className="flex-1 w-[80%] p-3 bg-gray-300 outline-none border-none"
@@ -105,6 +169,10 @@ function CenterChat() {
           />
         </div>
       </div>
+    </div>
+  ) : (
+    <div className="relative border-b-2 border-gray-900 h-full w-full">
+      <ChatPlaceholder />
     </div>
   );
 }

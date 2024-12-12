@@ -1,71 +1,89 @@
-import { useState } from "react";
+import { useContext, useState, memo } from "react";
 import { useNavigate } from "react-router-dom";
-import { logout } from "../../config/FirebaseConfig";
-
-const friends = [
-  {
-    name: "Arjun Mehta", // Indian
-    message: "Hey, let's catch up soon!",
-    image:
-      "https://img.icons8.com/?size=100&id=V8tVabAreXgU&format=png&color=000000",
-  },
-  {
-    name: "Priya Sharma", // Indian
-    message: "Don't forget the meeting tomorrow.",
-    image:
-      "https://img.icons8.com/?size=100&id=KdWbf0poZEB2&format=png&color=000000",
-  },
-  {
-    name: "Rahul Verma", // Indian
-    message: "How was the trip to Goa?",
-    image:
-      "https://img.icons8.com/?size=100&id=6oAufRlrYpcN&format=png&color=000000",
-  },
-  {
-    name: "John Doe", // Foreigner
-    message: "Check out this new café near our place.",
-    image: "https://img.icons8.com/?size=100&id=77989&format=png&color=000000",
-  },
-  {
-    name: "Rohan Gupta", // Indian
-    message: "Did you watch the match yesterday?",
-    image:
-      "https://img.icons8.com/?size=100&id=PEOcL1S6ExFT&format=png&color=000000",
-  },
-  {
-    name: "Ananya Roy", // Indian
-    message: "Happy Birthday! 🎉",
-    image:
-      "https://img.icons8.com/?size=100&id=eR6ipCmWdkt6&format=png&color=000000",
-  },
-  {
-    name: "Kunal Singh", // Indian
-    message: "Are we still on for the weekend?",
-    image:
-      "https://img.icons8.com/?size=100&id=lVQP-JvS__bJ&format=png&color=000000",
-  },
-  {
-    name: "Sneha Kapoor", // Indian
-    message: "Let's grab coffee soon!",
-    image:
-      "https://img.icons8.com/?size=100&id=CxsfjQ9qnPcX&format=png&color=000000",
-  },
-  {
-    name: "Jane Smith", // Foreigner
-    message: "Have you seen the latest movie?",
-    image:
-      "https://img.icons8.com/?size=100&id=EzjWLVtHwmC4&format=png&color=000000",
-  },
-  {
-    name: "Michael Johnson", // Foreigner
-    message: "I loved the concert last weekend.",
-    image: "https://img.icons8.com/?size=100&id=23309&format=png&color=000000",
-  },
-];
+import { db, logout } from "../../config/FirebaseConfig";
+import {
+  arrayUnion,
+  collection,
+  doc,
+  getDocs,
+  query,
+  serverTimestamp,
+  setDoc,
+  updateDoc,
+  where,
+} from "firebase/firestore";
+import { AppContext } from "../../context/AppContextProvider";
+import { toast } from "react-toastify";
 
 function LeftChat() {
   const [show, setShow] = useState(false);
+  const { userData, chatData, setChatUser, setMessagesId } =
+    useContext(AppContext);
+  const [user, setUser] = useState(null);
+  const [showSearch, setShowSearch] = useState(false);
   const navigate = useNavigate();
+
+  const handleSearch = async (e) => {
+    const value = e.target.value.trim().toLowerCase();
+    if (!value) {
+      setShowSearch(false);
+      setUser(null);
+      return;
+    }
+
+    try {
+      const userRef = collection(db, "USERS");
+      const q = query(userRef, where("name", "==", value));
+      const querySnap = await getDocs(q);
+
+      if (!querySnap.empty && querySnap.docs[0].data().id !== userData.id) {
+        const foundUser = querySnap.docs[0].data();
+        const userExists = chatData.some((u) => u.rId === foundUser.id);
+
+        setUser(userExists ? null : foundUser);
+        setShowSearch(!userExists);
+      } else {
+        setUser(null);
+        setShowSearch(false);
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error("Error fetching data");
+    }
+  };
+
+  const showChats = async () => {
+    try {
+      const messagesRef = collection(db, "MESSAGES");
+      const chatRef = collection(db, "CHATS");
+      const newMessageRef = doc(messagesRef);
+
+      await setDoc(newMessageRef, {
+        createdTime: serverTimestamp(),
+        messages: [],
+      });
+
+      const chatUpdate = {
+        chatData: arrayUnion({
+          messageId: newMessageRef.id,
+          lastMessage: "",
+          rId: userData.id,
+          updatedAt: Date.now(),
+          messageSeen: true,
+        }),
+      };
+
+      await updateDoc(doc(chatRef, user.id), chatUpdate);
+      await updateDoc(doc(chatRef, userData.id), chatUpdate);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const setChat = (friend) => {
+    setMessagesId(friend.messageId);
+    setChatUser(friend);
+  };
 
   return (
     <div className="flex relative border-2 border-gray-500 flex-col sour-gummy-font h-[85vh]">
@@ -127,35 +145,49 @@ function LeftChat() {
             type="text"
             placeholder="Search here.."
             className="w-full outline-none bg-gray-200 py-1 px-2"
+            onChange={handleSearch}
           />
         </div>
       </div>
       {/* Friends Section */}
       <div className="flex-1 h-full overflow-y-scroll mb-7">
         <ul>
-          {friends.map((friend, index) => (
-            <li key={index}>
-              <div className="flex items-center justify-start gap-3 py-2 px-4 hover:bg-gray-700 cursor-pointer">
-                <img
-                  src={friend.image}
-                  alt={friend.name}
-                  className="w-10 h-10 bg-purple-400 rounded-full"
-                />
-                <div>
-                  <h2 className="text-[17px] font-semibold">{friend.name}</h2>
-                  <p className="text-sm">
-                    {friend.message.length >= 21
-                      ? friend.message.substring(0, 20) + "..."
-                      : friend.message}
-                  </p>
+          {showSearch && user ? (
+            <div
+              className="flex items-center justify-start gap-3 py-2 px-4 hover:bg-gray-700 cursor-pointer"
+              onClick={showChats}
+            >
+              <input
+                type="text"
+                readOnly
+                value={user.avatar || ""}
+                className="w-10 h-10 bg-gray-300 rounded-full text-center text-2xl"
+              />
+              <h2 className="text-[17px] font-semibold">{user.name}</h2>
+            </div>
+          ) : (
+            chatData?.map((friend, index) => (
+              <li key={index} onClick={() => setChat(friend)}>
+                <div className="flex items-center justify-start gap-3 py-2 px-4 hover:bg-gray-700 cursor-pointer">
+                  <input
+                    value={friend.userData.avatar}
+                    readOnly
+                    className="w-10 h-10 bg-purple-400 rounded-full text-2xl"
+                  />
+                  <div>
+                    <h2 className="text-[17px] font-semibold">
+                      {friend.userData.name}
+                    </h2>
+                    <p className="text-sm">{friend.lastMessage}</p>
+                  </div>
                 </div>
-              </div>
-            </li>
-          ))}
+              </li>
+            ))
+          )}
         </ul>
       </div>
     </div>
   );
 }
 
-export default LeftChat;
+export default memo(LeftChat);

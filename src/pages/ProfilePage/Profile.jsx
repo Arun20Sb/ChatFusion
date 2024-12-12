@@ -8,12 +8,10 @@ import { AppContext } from "../../context/AppContextProvider";
 
 function Profile() {
   const navigate = useNavigate();
-
   const [name, setName] = useState("");
   const [emoji, setEmoji] = useState("");
   const [bio, setBio] = useState("");
   const [uid, setUid] = useState("");
-
   const { setUserData } = useContext(AppContext);
 
   const profileUpdate = async (e) => {
@@ -23,16 +21,23 @@ function Profile() {
         toast.error("Upload profile picture😴");
       }
       const docRef = doc(db, "USERS", uid);
-      if (emoji) {
-        await updateDoc(docRef, {
-          avatar: emoji,
-          bio: bio,
-          name: name,
-        });
-        toast.success("Profile updated!");
-      }
+      // Updated data prepare:
+      const updatedData = {
+        name,
+        bio,
+        ...(emoji && { avatar: emoji }),
+      };
+      await updateDoc(docRef, updatedData);
+      toast.success("Profile updated!");
+
+      // Re-fetch user data:
       const snap = await getDoc(docRef);
-      setUserData(snap.data);
+      setUserData(snap.data());
+
+      setName("");
+      setBio("");
+      setEmoji("");
+
       navigate("/chat");
     } catch (error) {
       console.error(error);
@@ -40,28 +45,26 @@ function Profile() {
     }
   };
 
-  // ----------
+  // Fetch userData on auth state change:
   useEffect(() => {
-    onAuthStateChanged(auth, async (user) => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         setUid(user.uid);
         const docRef = doc(db, "USERS", user.uid);
         const docSnap = await getDoc(docRef);
 
-        if (docSnap.data().name) {
+        if (docSnap.exists) {
           setName(docSnap.data().name);
-        }
-        if (docSnap.data().bio) {
           setBio(docSnap.data().bio);
-        }
-        if (docSnap.data().avatar) {
           setEmoji(docSnap.data().avatar);
         }
       } else {
         navigate("/");
       }
     });
-  });
+
+    return () => unsubscribe(); // cleanup on unmont
+  }, [navigate]);
   // ----------
 
   return (
@@ -81,6 +84,7 @@ function Profile() {
             <input
               type="text"
               maxLength="2"
+              value={emoji}
               pattern="[\p{Emoji}]"
               id="emojiInput"
               className="border-2 mr-3 rounded-full w-20 h-20 text-4xl text-center leading-tight outline-none text-gray-900"
@@ -90,13 +94,15 @@ function Profile() {
           </label>
           <input
             type="text"
+            value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="Enter Your name bro"
+            placeholder="Enter Your name"
             required
             className="py-2 px-3 rounded-sm border-none outline-none text-gray-900"
           />
           <textarea
             placeholder="Write something about yourself.."
+            value={bio}
             onChange={(e) => setBio(e.target.value)}
             required
             className="py-2 px-3 rounded-sm border-none outline-none text-gray-900"
