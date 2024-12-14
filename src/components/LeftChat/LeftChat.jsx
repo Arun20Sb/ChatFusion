@@ -1,4 +1,4 @@
-import { useContext, useState, memo } from "react";
+import { useContext, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { db, logout } from "../../config/FirebaseConfig";
 import {
@@ -16,35 +16,37 @@ import { AppContext } from "../../context/AppContextProvider";
 import { toast } from "react-toastify";
 
 function LeftChat() {
-  const [show, setShow] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
+  const [searchResult, setSearchResult] = useState(null);
+  const [isSearching, setIsSearching] = useState(false);
+
   const { userData, chatData, setChatUser, setMessagesId } =
     useContext(AppContext);
-  const [user, setUser] = useState(null);
-  const [showSearch, setShowSearch] = useState(false);
   const navigate = useNavigate();
 
   const handleSearch = async (e) => {
-    const value = e.target.value.trim().toLowerCase();
-    if (!value) {
-      setShowSearch(false);
-      setUser(null);
+    const searchValue = e.target.value.trim().toLowerCase();
+    if (!searchValue) {
+      setSearchResult(false);
+      setIsSearching(null);
       return;
     }
 
     try {
       const userRef = collection(db, "USERS");
-      const q = query(userRef, where("name", "==", value));
-      const querySnap = await getDocs(q);
+      const userQuery = query(userRef, where("name", "==", searchValue));
+      const querySnapshot = await getDocs(userQuery);
 
-      if (!querySnap.empty && querySnap.docs[0].data().id !== userData.id) {
-        const foundUser = querySnap.docs[0].data();
-        const userExists = chatData.some((u) => u.rId === foundUser.id);
-
-        setUser(userExists ? null : foundUser);
-        setShowSearch(!userExists);
+      if (!querySnapshot.empty) {
+        const foundUser = querySnapshot.docs[0].data();
+        if (foundUser.id !== userData.id) {
+          const userExists = chatData.some((u) => u.rId === foundUser.id);
+          setSearchResult(userExists ? null : foundUser);
+          setIsSearching(!userExists);
+        }
       } else {
-        setUser(null);
-        setShowSearch(false);
+        setSearchResult(null);
+        setIsSearching(false);
       }
     } catch (error) {
       console.error(error);
@@ -53,9 +55,10 @@ function LeftChat() {
   };
 
   const showChats = async () => {
+    if (!searchResult) return;
+
     try {
       const messagesRef = collection(db, "MESSAGES");
-      const chatRef = collection(db, "CHATS");
       const newMessageRef = doc(messagesRef);
 
       await setDoc(newMessageRef, {
@@ -63,6 +66,7 @@ function LeftChat() {
         messages: [],
       });
 
+      const chatRef = collection(db, "CHATS");
       const chatUpdate = {
         chatData: arrayUnion({
           messageId: newMessageRef.id,
@@ -73,14 +77,18 @@ function LeftChat() {
         }),
       };
 
-      await updateDoc(doc(chatRef, user.id), chatUpdate);
+      await updateDoc(doc(chatRef, searchResult.id), chatUpdate);
       await updateDoc(doc(chatRef, userData.id), chatUpdate);
+
+      setSearchResult(null);
+      setIsSearching(false);
     } catch (error) {
       console.error(error);
+      toast.error("Error initiating chat.");
     }
   };
 
-  const setChat = (friend) => {
+  const selectChat = (friend) => {
     setMessagesId(friend.messageId);
     setChatUser(friend);
   };
@@ -105,10 +113,10 @@ function LeftChat() {
               src="https://img.icons8.com/?size=100&id=21618&format=png&color=000000"
               alt="Settings"
               className="filter invert w-5 h-5 cursor-pointer"
-              onClick={() => setShow(!show)}
+              onClick={() => setShowMenu((prev) => !prev)}
             />
           </span>
-          {show && (
+          {showMenu && (
             <div className="absolute right-10 top-14 bg-gray-200 text-gray-900 exo-font text-lg font-semibold py-2 px-3  border-2 border-gray-950 rounded-md rounded-tr-none">
               <h3
                 className="border-b-2 border-gray-900 pb-1 cursor-pointer"
@@ -125,7 +133,7 @@ function LeftChat() {
               </h3>
               <hr />
               <div className="flex gap-2 items-center">
-                <h3 className="cursor-pointer">Setting</h3>
+                <h3 className="cursor-pointer">Settings</h3>
                 <img
                   src="https://img.icons8.com/?size=100&id=2969&format=png&color=000000"
                   alt=""
@@ -151,43 +159,43 @@ function LeftChat() {
       </div>
       {/* Friends Section */}
       <div className="flex-1 h-full overflow-y-scroll mb-7">
-        <ul>
-          {showSearch && user ? (
+        {isSearching && searchResult ? (
+          <div
+            className="flex items-center justify-start gap-3 py-2 px-4 hover:bg-gray-700 cursor-pointer"
+            onClick={showChats}
+          >
+            <input
+              type="text"
+              readOnly
+              value={searchResult.avatar || ""}
+              className="w-10 h-10 bg-gray-300 rounded-full text-center text-2xl"
+            />
+            <h2 className="text-[17px] font-semibold">{searchResult.name}</h2>
+          </div>
+        ) : (
+          chatData?.map((friend, index) => (
             <div
+              key={index}
               className="flex items-center justify-start gap-3 py-2 px-4 hover:bg-gray-700 cursor-pointer"
-              onClick={showChats}
+              onClick={() => selectChat(friend)}
             >
               <input
-                type="text"
+                value={friend.userData.avatar || "?"}
                 readOnly
-                value={user.avatar || ""}
-                className="w-10 h-10 bg-gray-300 rounded-full text-center text-2xl"
+                className="w-10 h-10 bg-purple-400 rounded-full text-2xl"
               />
-              <h2 className="text-[17px] font-semibold">{user.name}</h2>
+              <div>
+                <h2 className="text-[17px] font-semibold">
+                  {friend.userData.name}
+                </h2>
+                <p className="text-sm">{friend.lastMessage}</p>
+              </div>
             </div>
-          ) : (
-            chatData?.map((friend, index) => (
-              <li key={index} onClick={() => setChat(friend)}>
-                <div className="flex items-center justify-start gap-3 py-2 px-4 hover:bg-gray-700 cursor-pointer">
-                  <input
-                    value={friend.userData.avatar}
-                    readOnly
-                    className="w-10 h-10 bg-purple-400 rounded-full text-2xl"
-                  />
-                  <div>
-                    <h2 className="text-[17px] font-semibold">
-                      {friend.userData.name}
-                    </h2>
-                    <p className="text-sm">{friend.lastMessage}</p>
-                  </div>
-                </div>
-              </li>
-            ))
-          )}
-        </ul>
+          ))
+        )}
       </div>
     </div>
   );
 }
 
-export default memo(LeftChat);
+export default LeftChat;

@@ -68,7 +68,7 @@ function Login() {
             {SignInUp === "Sign Up" ? "Create account" : "Login"}
           </button>
           <label htmlFor="login-terms" className="flex justify-center text-sm">
-            <input type="checkbox" name="login-terms" required/>
+            <input type="checkbox" name="login-terms" required />
             <span className="px-2">
               Agree to our Terms of Service and Privacy Policy.
             </span>

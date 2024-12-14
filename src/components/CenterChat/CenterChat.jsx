@@ -18,18 +18,19 @@ function CenterChat() {
 
   const sendMsg = async () => {
     try {
-      if (input && messagesId) {
+      if (input.trim() && messagesId) {
+        // Add message to the database
         await updateDoc(doc(db, "MESSAGES", messagesId), {
           messages: arrayUnion({
             sId: userData.id,
             text: input,
-            createdAt: new Date(),
+            createdAt: new Date().toISOString(),
           }),
         });
 
         const userIds = [chatUser.rId, userData.id];
-        userIds.forEach(async (id) => {
-          const userChatsRef = doc(db, "CHATS", "id");
+        for (const id of userIds) {
+          const userChatsRef = doc(db, "CHATS", id);
           const userChatsSnapshot = await getDoc(userChatsRef);
 
           if (userChatsSnapshot.exists()) {
@@ -37,23 +38,39 @@ function CenterChat() {
             const chatIndex = userChatsData.chatData.findIndex(
               (c) => c.messagesId === messagesId
             );
-            userChatsData.chatData[chatIndex].lastMessage = input.slice(0, 27);
 
-            userChatsData.chatData[chatIndex].upd
+            if (chatIndex !== -1) {
+              userChatsData.chatData[chatIndex].lastMessage = input.slice(
+                0,
+                27
+              );
+              userChatsData.chatData[chatIndex].updatedAt = Date.now();
+            }
+
+            if (userChatsData.chatData[chatIndex].rId === userData.id) {
+              userChatsData.chatData[chatIndex].messageSeen = false;
+            }
+            await updateDoc(userChatsRef, {
+              chatData: userChatsData.chatData,
+            });
           }
-        });
+        }
       }
+      setInput("");
+      // cleared the input after sending
     } catch (error) {
-      console.error(error);
+      console.error("Error sending message: ", error.message);
     }
   };
 
   // Load messages:
   useEffect(() => {
     if (messagesId) {
-      const unSubscribe = onSnapshot(doc(db, "MESSAGES", messagesId), (res) => {
-        setMessages(res.data().messages.reverse());
-        console.log(res.data().messages.reverse());
+      const unSubscribe = onSnapshot(doc(db, "MESSAGES", messagesId), (doc) => {
+        if (doc.exists()) {
+          setMessages(doc.data().messages.reverse());
+          console.log(doc.data().messages.reverse());
+        }
       });
 
       return () => unSubscribe();
@@ -91,51 +108,47 @@ function CenterChat() {
         }}
       >
         {/* Sender text*/}
-        <div className="flex flex-row justify-end gap-2 text-gray-900 sour-gummy-font relative">
-          <p className="text-base leading-[1.2rem] bg-gray-300 rounded-br-none rounded-2xl py-1 px-2 w-1/2 mb-8">
-            🤔Kaiju No.8 dhek sahi hai? its a sci-fi anime that tells the story
-            of a man who becomes a monster, 1 season aya abhi just..🔥
-          </p>
-          <div className="flex flex-col justify-end items-center relative">
-            <img
-              src="https://img.icons8.com/?size=100&id=KdWbf0poZEB2&format=png&color=000000"
-              className="bg-green-300 w-10 h-10 rounded-full p-1"
-              alt="receiver"
-            />
-            <span className="text-sm">19:38</span>
-          </div>
-        </div>
-        {/* Sender image*/}
-        <div className="flex flex-row justify-end gap-2 text-gray-900 sour-gummy-font relative">
-          <img
-            src="/sample.jpeg"
-            alt=""
-            className="max-w-64 max-h-56 mb-8 rounded-md"
-          />
-          <div className="flex flex-col justify-end items-center relative">
-            <img
-              src="https://img.icons8.com/?size=100&id=KdWbf0poZEB2&format=png&color=000000"
-              className="bg-green-300 w-10 h-10 rounded-full p-1"
-              alt="receiver"
-            />
-            <span className="text-sm">19:38</span>
-          </div>
-        </div>
-        {/* Receiver */}
-        <div className="flex flex-row-reverse justify-end gap-2 text-gray-900 sour-gummy-font relative">
-          <p className="text-base leading-[1.2rem] bg-gray-300 rounded-bl-none rounded-2xl py-1 px-2 w-1/2 mb-8">
-            Yo 👊🏻, ek anime suggest krr koi? fantasy ya scifi, abhi just
-            dandadan finish kri mene?
-          </p>
-          <div className="flex flex-col justify-end items-center relative">
-            <img
-              src="https://img.icons8.com/?size=100&id=zrErKKsIhJqc&format=png&color=000000"
-              className="bg-green-300 w-10 h-10 rounded-full p-1"
-              alt="receiver"
-            />
-            <span className="text-sm">19:38</span>
-          </div>
-        </div>
+        {messages.map((msg, index) => {
+          {
+            msg.sId === userData.id ? (
+              <div
+                className="flex flex-row justify-end gap-2 text-gray-900 sour-gummy-font relative"
+                key={index}
+              >
+                <p className="text-base leading-[1.2rem] bg-gray-300 rounded-br-none rounded-2xl py-1 px-2 w-1/2 mb-8">
+                  {msg.text}
+                </p>
+                <div className="flex flex-col justify-end items-center relative">
+                  <input
+                    src={userData.avatar}
+                    className="bg-green-300 w-10 h-10 rounded-full p-1 text-center text-3xl"
+                  />
+                  <span className="text-sm">19:38</span>
+                </div>
+              </div>
+            ) : (
+              {
+                /* Receiver */
+              }(
+                <div
+                  className="flex flex-row-reverse justify-end gap-2 text-gray-900 sour-gummy-font relative"
+                  key={index}
+                >
+                  <p className="text-base leading-[1.2rem] bg-gray-300 rounded-bl-none rounded-2xl py-1 px-2 w-1/2 mb-8">
+                    {msg.text}
+                  </p>
+                  <div className="flex flex-col justify-end items-center relative">
+                    <input
+                      src={chatUser.userData.avatar}
+                      className="bg-green-300 w-10 h-10 rounded-full p-1 text-center text-3xl"
+                    />
+                    <span className="text-sm">19:38</span>
+                  </div>
+                </div>
+              )
+            );
+          }
+        })}
       </div>
       {/* Chat section end*/}
 
@@ -163,6 +176,7 @@ function CenterChat() {
             />
           </label>
           <img
+            onClick={sendMsg}
             src="https://img.icons8.com/?size=100&id=93330&format=png&color=000000"
             alt=""
             className="w-7 h-7 cursor-pointer bg-sky-400 p-1 rounded-full"
