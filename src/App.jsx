@@ -20,8 +20,6 @@ function App() {
           await LoadingUser(user.uid);
         } catch (error) {
           console.error("Error loading user data: ", error);
-        } finally {
-          console.log("App.jsx - user: ", user.uid);
         }
       } else {
         navigate("/");

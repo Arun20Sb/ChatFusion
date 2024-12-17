@@ -66,10 +66,18 @@ function CenterChat() {
   };
 
   const convertTimeStamp = (timestamp) => {
-    if (!timestamp || !timestamp.toDate) return "Invalid Date";
-    let date = timestamp.toDate();
-    const hour = date.getHours();
-    const min = String(date.getMinutes()).padStart(2, "0");
+    if (!timestamp) return "Invalid Date";
+
+    // Convert string timestamp to Date if it's in ISO 8601 format
+    if (typeof timestamp === "string") {
+      timestamp = new Date(timestamp);
+    }
+
+    // Check if it's a valid Date object
+    if (!(timestamp instanceof Date) || isNaN(timestamp)) return "Invalid Date";
+
+    const hour = timestamp.getHours();
+    const min = String(timestamp.getMinutes()).padStart(2, "0");
 
     if (hour === 0) return `12:${min} AM`;
     if (hour < 12) return `${hour}:${min} AM`;
@@ -83,7 +91,6 @@ function CenterChat() {
       const unSubscribe = onSnapshot(doc(db, "MESSAGES", messagesId), (res) => {
         if (res.exists()) {
           setMessages(res.data().messages.reverse());
-          console.log("Messages------------>", res.data().messages.reverse());
         }
       });
 
@@ -114,7 +121,7 @@ function CenterChat() {
       <div
         className="bg-violet-300 h-full w-full p-5 relative overflow-y-scroll flex flex-col-reverse"
         style={{
-          backgroundImage: `url("/anime7.jpg")`,
+          // backgroundImage: `url("/anime7.jpg")`,
           backgroundPosition: "center",
           backgroundRepeat: "no-repeat",
           backgroundSize: "cover",
@@ -127,20 +134,19 @@ function CenterChat() {
               className="flex flex-row justify-end gap-2 text-gray-900 sour-gummy-font relative"
               key={index}
             >
-              <p className="text-base leading-[1.2rem] bg-gray-200 rounded-br-none rounded-2xl py-1 px-2 w-1/2 mb-8">
+              <p className="text-base leading-[1.2rem] bg-gray-200 rounded-br-none rounded-lg py-1 px-3 w-fit max-w-[50%] mb-9 break-words">
                 {msg.text}
               </p>
               <div className="flex flex-col justify-end items-center relative">
-                <img
-                  src={
+                <input
+                  value={
                     msg.sId === userData.id
                       ? userData.avatar
                       : chatUser.userData.avatar
                   }
                   alt="Avatar"
-                  className="bg-green-300 w-10 h-10 rounded-full p-1"
+                  className="bg-green-300 w-10 h-10 rounded-full p-1 text-center text-xl"
                 />
-
                 <span className="text-sm">
                   {convertTimeStamp(msg.createdAt)}
                 </span>
@@ -148,21 +154,21 @@ function CenterChat() {
             </div>
           ) : (
             <div
-              className="flex flex-row justify-start gap-2 text-gray-900 sour-gummy-font relative"
+              className="flex flex-row-reverse justify-end gap-2 text-gray-900 sour-gummy-font relative"
               key={index}
             >
-              <p className="text-base leading-[1.2rem] bg-gray-200 rounded-br-none rounded-2xl py-1 px-2 w-1/2 mb-8">
+              <p className="text-base leading-[1.2rem] bg-gray-200 rounded-bl-none rounded-lg py-1 px-3 w-fit max-w-[50%] mb-9 break-words">
                 {msg.text}
               </p>
               <div className="flex flex-col justify-end items-center relative">
-                <img
-                  src={
+                <input
+                  value={
                     msg.sId === userData.id
                       ? userData.avatar
                       : chatUser.userData.avatar
                   }
                   alt="Avatar"
-                  className="bg-green-300 w-10 h-10 rounded-full p-1"
+                  className="bg-green-300 w-10 h-10 rounded-full p-1 text-center text-xl"
                 />
                 <span className="text-sm">
                   {convertTimeStamp(msg.createdAt)}
@@ -183,6 +189,7 @@ function CenterChat() {
             placeholder="Send a message"
             className="flex-1 w-[80%] p-3 bg-gray-300 outline-none border-none"
           />
+
           <input
             type="file"
             id="imageSend"

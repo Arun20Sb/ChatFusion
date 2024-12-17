@@ -46,7 +46,6 @@ export const AppContextProvider = (props) => {
   // Fetch chat data when userData changes
   useEffect(() => {
     if (userData) {
-      console.log("AppContextProvider.jsx - userData: ", userData);
       const chatRef = doc(db, "CHATS", userData.id);
 
       const unsub = onSnapshot(chatRef, async (res) => {

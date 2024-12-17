@@ -33,9 +33,6 @@ function LeftChat() {
   } = useContext(AppContext);
   const navigate = useNavigate();
 
-  console.log("----------------LeftChat - userData: ", userData);
-  console.log("LeftChat - chatData: ", chatData);
-
   const handleSearch = async (e) => {
     const searchValue = e.target.value.trim().toLowerCase();
     if (searchValue.length <= 3) return;
@@ -59,9 +56,6 @@ function LeftChat() {
           });
           if (!userExist) {
             setSearchResult(querySnapshot.docs[0].data());
-            console.log("Ok: ", querySnapshot.docs[0].data());
-            console.log("Ok: ", searchResult);
-            console.log("Chatdata: ", chatData);
           }
         } else {
           setSearchResult(null);
@@ -71,7 +65,6 @@ function LeftChat() {
       }
     } catch (error) {
       console.error("Error fetching data:", error);
-      console.log("Error: ", searchResult);
       toast.error("Error fetching data");
     }
   };
