@@ -10,11 +10,7 @@ import { doc, getFirestore, setDoc } from "firebase/firestore";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
-
-// Your web app's Firebase configuration
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+// Firebase configuration
 const firebaseConfig = {
   apiKey: "AIzaSyBfZJRXcmdiiTc6wTW_TQv_qmOUnNT6J-o",
   authDomain: "chatfusion-72cfa.firebaseapp.com",
@@ -27,57 +23,64 @@ const firebaseConfig = {
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
-
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// Sign Up:
+// Sign Up
 const SignUp = async (username, email, password) => {
   try {
     const res = await createUserWithEmailAndPassword(auth, email, password);
     const user = res.user;
 
+    // Create COLLECTIONS-I - USERS:
     await setDoc(doc(db, "USERS", user.uid), {
       id: user.uid,
       username: username.toLowerCase(),
       email,
       name: "",
       avatar: "",
-      bio: "",
-      password,
+      bio: "Yo, i am using ChatFusion",
       lastSeen: Date.now(),
     });
-    await setDoc(doc(db, "CHATS", user.uid), {
-      chatData: [],
-    });
+
+    // Create DOCUMENT OF COLLECTION-USERS - CHATS:
+    await setDoc(doc(db, "CHATS", user.uid), { chatData: [] });
 
     toast("User created successfully! 🎉");
   } catch (error) {
-    console.log(error);
-    toast.error(error.code.split("/")[1].split("-").join(" "));
+    console.error(error);
+    toast.error(getErrorMessage(error));
   }
 };
 
-// Login:
+// Login
 const login = async (email, password) => {
   try {
     await signInWithEmailAndPassword(auth, email, password);
     toast("User Logged in successfully! 🎉");
   } catch (error) {
     console.error(error);
-    toast.error(error.code.split("/")[1].split("-").join(" "));
+    toast.error(getErrorMessage(error));
   }
 };
 
-// Login:
-const logout = async (email, password) => {
+// Logout
+const logout = async () => {
+  const isConfirmed = window.confirm("Are you sure you want to log out? 💀");
+  if (!isConfirmed) return;
+
   try {
-    await signOut(auth, email, password);
-    toast("User Logged out successfully! 😰");
+    await signOut(auth);
+    toast("User Logged out successfully! 💔");
   } catch (error) {
     console.error(error);
-    toast.error(error.code.split("/")[1].split("-").join(" "));
+    toast.error(getErrorMessage(error));
   }
+};
+
+// Helper function to handle error messages
+const getErrorMessage = (error) => {
+  return error.code.split("/")[1].split("-").join(" ");
 };
 
 export { SignUp, login, logout, auth, db };

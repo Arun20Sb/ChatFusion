@@ -7,41 +7,41 @@ import { toast } from "react-toastify";
 import { AppContext } from "../../context/AppContextProvider";
 
 function Profile() {
-  const navigate = useNavigate();
   const [name, setName] = useState("");
   const [emoji, setEmoji] = useState("");
   const [bio, setBio] = useState("");
   const [uid, setUid] = useState("");
+
   const { setUserData } = useContext(AppContext);
+  const navigate = useNavigate();
 
   const profileUpdate = async (e) => {
     e.preventDefault();
     try {
       if (!emoji) {
         toast.error("Upload profile picture😴");
+        return;
       }
       const docRef = doc(db, "USERS", uid);
-      // Updated data prepare:
-      const updatedData = {
-        name,
-        bio,
-        ...(emoji && { avatar: emoji }),
-      };
-      await updateDoc(docRef, updatedData);
+      if (emoji) {
+        await updateDoc(docRef, {
+          avatar: emoji,
+          bio: bio,
+          name: name,
+        });
+      }
       toast.success("Profile updated!");
 
-      // Re-fetch user data:
+      // Update local user data immediately:
       const snap = await getDoc(docRef);
       setUserData(snap.data());
-
+      navigate("/chat"); 
       setName("");
       setBio("");
       setEmoji("");
-
-      navigate("/chat");
     } catch (error) {
       console.error(error);
-      toast.error("Error updating profile");
+      toast.error(`Error updating profile: ${error.message}`);
     }
   };
 
@@ -53,9 +53,13 @@ function Profile() {
         const docRef = doc(db, "USERS", user.uid);
         const docSnap = await getDoc(docRef);
 
-        if (docSnap.exists) {
+        if (docSnap.data().name) {
           setName(docSnap.data().name);
+        }
+        if (docSnap.data().bio) {
           setBio(docSnap.data().bio);
+        }
+        if (docSnap.data().avatar) {
           setEmoji(docSnap.data().avatar);
         }
       } else {
@@ -64,7 +68,8 @@ function Profile() {
     });
 
     return () => unsubscribe(); // cleanup on unmont
-  }, [navigate]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   // ----------
 
   return (
@@ -84,26 +89,26 @@ function Profile() {
             <input
               type="text"
               maxLength="2"
+              onChange={(e) => setEmoji(e.target.value)}
               value={emoji}
               pattern="[\p{Emoji}]"
               id="emojiInput"
               className="border-2 mr-3 rounded-full w-20 h-20 text-4xl text-center leading-tight outline-none text-gray-900"
-              onChange={(e) => setEmoji(e.target.value)}
             />
             👈🏻 Enter your emoji here
           </label>
           <input
             type="text"
-            value={name}
             onChange={(e) => setName(e.target.value)}
+            value={name}
             placeholder="Enter Your name"
             required
             className="py-2 px-3 rounded-sm border-none outline-none text-gray-900"
           />
           <textarea
             placeholder="Write something about yourself.."
-            value={bio}
             onChange={(e) => setBio(e.target.value)}
+            value={bio}
             required
             className="py-2 px-3 rounded-sm border-none outline-none text-gray-900"
           ></textarea>

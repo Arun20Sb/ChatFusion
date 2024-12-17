@@ -2,11 +2,10 @@ import { useState } from "react";
 import { SignUp, login } from "../../config/FirebaseConfig";
 
 function Login() {
+  const [SignInUp, setSignInUp] = useState("Sign Up");
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-
-  const [SignInUp, setSignInUp] = useState("Sign Up");
 
   // Form Submit:
   const handleSubmit = (e) => {

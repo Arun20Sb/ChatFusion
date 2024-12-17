@@ -10,26 +10,27 @@ import { AppContext } from "./context/AppContextProvider";
 
 function App() {
   const navigate = useNavigate();
-  const { loadUser, userData } = useContext(AppContext);
+  const { LoadingUser } = useContext(AppContext);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
+        navigate("/chat");
         try {
-          await loadUser(user.uid);
-          if (userData) {
-            navigate("/chat");
-          }
+          await LoadingUser(user.uid);
         } catch (error) {
           console.error("Error loading user data: ", error);
+        } finally {
+          console.log("App.jsx - user: ", user.uid);
         }
-      } else if (!user) {
+      } else {
         navigate("/");
       }
     });
 
     return () => unsubscribe();
-  }, [loadUser, navigate, userData]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <>

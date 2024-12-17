@@ -18,38 +18,60 @@ import { toast } from "react-toastify";
 function LeftChat() {
   const [showMenu, setShowMenu] = useState(false);
   const [searchResult, setSearchResult] = useState(null);
-  const [isSearching, setIsSearching] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
+  // const [isSearching, setIsSearching] = useState(false);
 
-  const { userData, chatData, setChatUser, setMessagesId } =
-    useContext(AppContext);
+  const {
+    userData,
+    chatData,
+    // eslint-disable-next-line no-unused-vars
+    chatUser,
+    setChatUser,
+    // eslint-disable-next-line no-unused-vars
+    messageId,
+    setMessagesId,
+  } = useContext(AppContext);
   const navigate = useNavigate();
+
+  console.log("----------------LeftChat - userData: ", userData);
+  console.log("LeftChat - chatData: ", chatData);
 
   const handleSearch = async (e) => {
     const searchValue = e.target.value.trim().toLowerCase();
-    if (!searchValue) {
-      setSearchResult(false);
-      setIsSearching(null);
-      return;
-    }
-
+    if (searchValue.length <= 3) return;
     try {
-      const userRef = collection(db, "USERS");
-      const userQuery = query(userRef, where("name", "==", searchValue));
-      const querySnapshot = await getDocs(userQuery);
+      if (searchValue) {
+        setShowSearch(true);
 
-      if (!querySnapshot.empty) {
-        const foundUser = querySnapshot.docs[0].data();
-        if (foundUser.id !== userData.id) {
-          const userExists = chatData.some((u) => u.rId === foundUser.id);
-          setSearchResult(userExists ? null : foundUser);
-          setIsSearching(!userExists);
+        const userRef = collection(db, "USERS");
+        const userQuery = query(userRef, where("name", "==", searchValue));
+        const querySnapshot = await getDocs(userQuery);
+
+        if (
+          !querySnapshot.empty &&
+          querySnapshot.docs[0].data().id !== userData.id
+        ) {
+          let userExist = false;
+          chatData.map((user) => {
+            if (user.rId === querySnapshot.docs[0].data().id) {
+              userExist = true;
+            }
+          });
+          if (!userExist) {
+            setSearchResult(querySnapshot.docs[0].data());
+            console.log("Ok: ", querySnapshot.docs[0].data());
+            console.log("Ok: ", searchResult);
+            console.log("Chatdata: ", chatData);
+          }
+        } else {
+          setSearchResult(null);
         }
       } else {
-        setSearchResult(null);
-        setIsSearching(false);
+        setShowSearch(false);
       }
     } catch (error) {
-      console.error(error);
+      console.error("Error fetching data:", error);
+      console.log("Error: ", searchResult);
       toast.error("Error fetching data");
     }
   };
@@ -57,17 +79,23 @@ function LeftChat() {
   const showChats = async () => {
     if (!searchResult) return;
 
+    // Create COLLECTION-II - MESSAGES:
+    const messagesRef = collection(db, "MESSAGES");
+    const chatRef = collection(db, "CHATS");
     try {
-      const messagesRef = collection(db, "MESSAGES");
       const newMessageRef = doc(messagesRef);
 
+      // Create the messages document
       await setDoc(newMessageRef, {
         createdTime: serverTimestamp(),
         messages: [],
       });
 
-      const chatRef = collection(db, "CHATS");
-      const chatUpdate = {
+      // Update the chat document with a reference to the message document
+      // Create a reference to a new chat document
+      // User A:
+
+      await updateDoc(doc(chatRef, searchResult.id), {
         chatData: arrayUnion({
           messageId: newMessageRef.id,
           lastMessage: "",
@@ -75,27 +103,42 @@ function LeftChat() {
           updatedAt: Date.now(),
           messageSeen: true,
         }),
-      };
+      });
 
-      await updateDoc(doc(chatRef, searchResult.id), chatUpdate);
-      await updateDoc(doc(chatRef, userData.id), chatUpdate);
+      // User B:
+      await updateDoc(doc(chatRef, userData.id), {
+        chatData: arrayUnion({
+          messageId: newMessageRef.id,
+          lastMessage: "",
+          rId: searchResult.id,
+          updatedAt: Date.now(),
+          messageSeen: true,
+        }),
+      });
 
       setSearchResult(null);
-      setIsSearching(false);
+      setChatUser(searchResult);
     } catch (error) {
       console.error(error);
       toast.error("Error initiating chat.");
     }
   };
 
-  const selectChat = (friend) => {
+  const selectChat = async (friend) => {
     setMessagesId(friend.messageId);
     setChatUser(friend);
+    // const userChatsRef = doc(db, "CHATS", userData.id);
+    // const userChatsSnapshot = await getDoc(userChatsRef);
+    // const userChatsData = userChatsSnapshot.data();
+    // const chatIndex = userChatsData.chatData.findIndex(
+    //   (c) => c.messageId === friend.messageId
+    // );
+    // userChatsData.chatData[chatIndex].messageSeen = true;
+    // await updateDoc(userChatsRef, { chatData: userChatsData.chatData });
   };
 
   return (
     <div className="flex relative border-2 border-gray-500 flex-col sour-gummy-font h-[85vh]">
-      {/* Search section */}
       <div className="flex justify-between flex-col gap-5 my-3 p-5">
         <div className="flex justify-between">
           <div className="flex items-center gap-1">
@@ -117,7 +160,7 @@ function LeftChat() {
             />
           </span>
           {showMenu && (
-            <div className="absolute right-10 top-14 bg-gray-200 text-gray-900 exo-font text-lg font-semibold py-2 px-3  border-2 border-gray-950 rounded-md rounded-tr-none">
+            <div className="absolute right-10 top-14 bg-gray-200 text-gray-900 exo-font text-lg font-semibold py-2 px-3 border-2 border-gray-950 rounded-md rounded-tr-none">
               <h3
                 className="border-b-2 border-gray-900 pb-1 cursor-pointer"
                 onClick={() => navigate("/profile")}
@@ -143,6 +186,7 @@ function LeftChat() {
             </div>
           )}
         </div>
+
         <div className="flex bg-gray-200 py-2 px-2 gap-2 items-center justify-center w-full max-lg:w-56 text-gray-800 rounded-sm hubot-font">
           <img
             src="https://img.icons8.com/?size=100&id=nEaCzRRWyzwN&format=png&color=000000"
@@ -157,9 +201,9 @@ function LeftChat() {
           />
         </div>
       </div>
-      {/* Friends Section */}
+
       <div className="flex-1 h-full overflow-y-scroll mb-7">
-        {isSearching && searchResult ? (
+        {showSearch && searchResult ? (
           <div
             className="flex items-center justify-start gap-3 py-2 px-4 hover:bg-gray-700 cursor-pointer"
             onClick={showChats}
@@ -167,7 +211,7 @@ function LeftChat() {
             <input
               type="text"
               readOnly
-              value={searchResult.avatar || ""}
+              value={searchResult.avatar}
               className="w-10 h-10 bg-gray-300 rounded-full text-center text-2xl"
             />
             <h2 className="text-[17px] font-semibold">{searchResult.name}</h2>
@@ -180,9 +224,9 @@ function LeftChat() {
               onClick={() => selectChat(friend)}
             >
               <input
-                value={friend.userData.avatar || "?"}
+                value={friend.userData.avatar || ""}
                 readOnly
-                className="w-10 h-10 bg-purple-400 rounded-full text-2xl"
+                className="w-10 h-10 bg-purple-400 rounded-full text-2xl text-center"
               />
               <div>
                 <h2 className="text-[17px] font-semibold">

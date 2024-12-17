@@ -7,74 +7,75 @@ export const AppContext = createContext();
 
 export const AppContextProvider = (props) => {
   const [userData, setUserData] = useState(null);
-  const [chatData, setChatData] = useState(null);
+  const [chatData, setChatData] = useState([]);
+  
   const [messagesId, setMessagesId] = useState(null);
   const [messages, setMessages] = useState([]);
   const [chatUser, setChatUser] = useState(null);
-
+  
   const navigate = useNavigate();
 
-  // Load user Data from firebase firestore:
-  const loadUser = async (uid) => {
+  // Load user data from Firestore
+  const LoadingUser = async (uid) => {
     try {
       const userRef = doc(db, "USERS", uid);
       const userSnap = await getDoc(userRef);
+
       const usersData = userSnap.data();
       setUserData(usersData);
 
-      if (userData?.avatar && userData.name) {
-        navigate("/chat", { replace: true });
+      if (usersData.avatar && usersData.name) {
+        navigate("/chat");
       } else {
-        navigate("/profile", { replace: true });
+        navigate("/profile");
       }
 
       // lastSeen here:
-      const intervalId = setInterval(async () => {
+      setInterval(async () => {
         if (auth.chatUser) {
           await updateDoc(userRef, {
             lastSeen: Date.now(),
           });
         }
       }, 60000 * 5);
-
-      return () => clearInterval(intervalId);
     } catch (error) {
-      console.error(error);
+      console.error("Error loading user:", error);
     }
   };
 
-  // if userData changes, fetch chats data now:
+  // Fetch chat data when userData changes
   useEffect(() => {
     if (userData) {
+      console.log("AppContextProvider.jsx - userData: ", userData);
       const chatRef = doc(db, "CHATS", userData.id);
 
-      const unsub = onSnapshot(chatRef, async (response) => {
-        const chatItems = response.data().chatData;
-        const tempData = [];
+      const unsub = onSnapshot(chatRef, async (res) => {
+        if (res.exists()) {
+          const chatItems = res.data().chatData;
+          const tempData = [];
 
-        for (const item of chatItems) {
-          const userRef = doc(db, "USERS", item.rId);
-          const userSnap = await getDoc(userRef);
-          const userData = userSnap.data();
+          for(const item of chatItems){
+            const userRef = doc(db, "USERS", item.rId);
+            const userSnap = await getDoc(userRef);
+            const userData= userSnap.data();
+            tempData.push({...item, userData})
+          }
 
-          tempData.push({ ...item, userData });
+          // const chatList = await Promise.all(tempData);
+          setChatData(tempData.sort((a, b) => b.updatedAt - a.updatedAt));
         }
-        // latest first
-        setChatData(tempData.sort((a, b) => b.updatedAt - a.updatedAt));
       });
-      // Cleanup function, when component unmounts:
-      return () => {
-        unsub();
-      };
+
+      return () => unsub();
     }
-  }, [userData, chatData]);
+  }, [userData]);
 
   const value = {
     userData,
     setUserData,
     chatData,
     setChatData,
-    loadUser,
+    LoadingUser,
     messagesId,
     setMessagesId,
     messages,
