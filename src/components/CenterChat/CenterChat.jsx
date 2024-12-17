@@ -19,45 +19,56 @@ function CenterChat() {
     if (!input.trim() || !messagesId) return;
 
     try {
-      const messageData = {
-        sId: userData.id,
-        text: input,
-        createdAt: new Date().toISOString(),
-      };
-
       // Add message to Firestore
       await updateDoc(doc(db, "MESSAGES", messagesId), {
-        messages: arrayUnion(messageData),
+        messages: arrayUnion({
+          sId: userData.id,
+          text: input,
+          createdAt: new Date().toISOString(),
+        }),
       });
 
       const userIds = [chatUser.rId, userData.id];
 
-      // Fetch user chats once and update
-      const updates = userIds.map(async (id) => {
+      // Fetch user chats and update them
+      userIds.forEach(async (id) => {
         const userChatsRef = doc(db, "CHATS", id);
         const userChatsSnapshot = await getDoc(userChatsRef);
 
-        if (userChatsSnapshot.exists()) {
-          const chatData = userChatsSnapshot.data().chatData;
-          const chatIndex = chatData.findIndex(
-            (c) => c.messagesId === messagesId
-          );
+        if (!userChatsSnapshot.exists()) return;
+        console.log("UserChatsSnapshot: ", userChatsSnapshot.data());
 
-          if (chatIndex !== -1) {
-            chatData[chatIndex] = {
-              ...chatData[chatIndex],
-              lastMessage: input.slice(0, 27),
-              updatedAt: Date.now(),
-              messageSeen:
-                chatData[chatIndex].rId === userData.id ? false : true,
-            };
+        const userChatData = userChatsSnapshot.data();
 
-            await updateDoc(userChatsRef, { chatData });
+        // Find the index of the chatData entry that matches the current messageId
+        const chatIndex = userChatData.chatData.findIndex(
+          (c) => c.messageId === messagesId
+        );
+
+        if (chatIndex !== -1) {
+          // If chatData entry exists, update it
+          const updatedChat = { ...userChatData.chatData[chatIndex] };
+          updatedChat.lastMessage = input.slice(0, 27); // Update last message text
+          updatedChat.updatedAt = Date.now();
+          if (updatedChat.rId === userData.id) {
+            updatedChat.messageSeen = false; // Mark message as unseen for user
           }
-        }
-      });
 
-      await Promise.all(updates);
+          userChatData.chatData[chatIndex] = updatedChat; // Update chat data
+        } else {
+          // If no existing entry, add a new one
+          userChatData.chatData.push({
+            messageId: messagesId,
+            lastMessage: input.slice(0, 27),
+            rId: chatUser.rId,
+            updatedAt: Date.now(),
+            messageSeen: false,
+          });
+        }
+
+        // Update the entire chat data array
+        await updateDoc(userChatsRef, { chatData: userChatData.chatData });
+      });
     } catch (error) {
       console.error("Error sending message:", error.message);
     } finally {
@@ -213,7 +224,7 @@ function CenterChat() {
       </div>
     </div>
   ) : (
-    <div className="relative border-b-2 border-gray-900 h-full w-full">
+    <div className="relative border-b-2 border-gray-900 h-full w-full flex">
       <ChatPlaceholder />
     </div>
   );

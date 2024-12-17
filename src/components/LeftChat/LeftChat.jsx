@@ -5,6 +5,7 @@ import {
   arrayUnion,
   collection,
   doc,
+  getDoc,
   getDocs,
   query,
   serverTimestamp,
@@ -21,16 +22,8 @@ function LeftChat() {
   const [showSearch, setShowSearch] = useState(false);
   // const [isSearching, setIsSearching] = useState(false);
 
-  const {
-    userData,
-    chatData,
-    // eslint-disable-next-line no-unused-vars
-    chatUser,
-    setChatUser,
-    // eslint-disable-next-line no-unused-vars
-    messageId,
-    setMessagesId,
-  } = useContext(AppContext);
+  const { userData, chatData, setChatUser, setMessagesId, messageId } =
+    useContext(AppContext);
   const navigate = useNavigate();
 
   const handleSearch = async (e) => {
@@ -118,16 +111,21 @@ function LeftChat() {
   };
 
   const selectChat = async (friend) => {
-    setMessagesId(friend.messageId);
-    setChatUser(friend);
-    // const userChatsRef = doc(db, "CHATS", userData.id);
-    // const userChatsSnapshot = await getDoc(userChatsRef);
-    // const userChatsData = userChatsSnapshot.data();
-    // const chatIndex = userChatsData.chatData.findIndex(
-    //   (c) => c.messageId === friend.messageId
-    // );
-    // userChatsData.chatData[chatIndex].messageSeen = true;
-    // await updateDoc(userChatsRef, { chatData: userChatsData.chatData });
+    try {
+      setMessagesId(friend.messageId);
+      setChatUser(friend);
+
+      const userChatsRef = doc(db, "CHATS", userData.id);
+      const userChatsSnapshot = await getDoc(userChatsRef);
+      const userChatsData = userChatsSnapshot.data();
+      const chatIndex = userChatsData.chatData.findIndex(
+        (c) => c.messageId === friend.messageId
+      );
+      userChatsData.chatData[chatIndex].messageSeen = true;
+      await updateDoc(userChatsRef, { chatData: userChatsData.chatData });
+    } catch (error) {
+      console.error(error.message);
+    }
   };
 
   return (
@@ -225,7 +223,15 @@ function LeftChat() {
                 <h2 className="text-[17px] font-semibold">
                   {friend.userData.name}
                 </h2>
-                <p className="text-sm">{friend.lastMessage}</p>
+                <p
+                  className={`text-sm ${
+                    friend.messageSeen || friend.messageId === messageId
+                      ? ""
+                      : "text-green-400 font-bold "
+                  }`}
+                >
+                  {friend.lastMessage || "no lastmsg"}
+                </p>
               </div>
             </div>
           ))
