@@ -29,7 +29,7 @@ const Chat = () => {
 
   return (
     <div className="h-screen grid place-items-center bg-gray-200">
-      <div className="w-[90%] h-[85vh] grid grid-cols-[1fr_2fr_1fr] bg-gray-950 text-gray-100 mx-auto">
+      <div className="w-full h-full grid grid-cols-[1fr_2fr_1fr] bg-gray-950 text-gray-100 mx-auto">
         <LeftChat />
         <CenterChat />
         <RightChat />

@@ -129,7 +129,7 @@ function LeftChat() {
   };
 
   return (
-    <div className="flex relative border-2 border-gray-500 flex-col sour-gummy-font h-[85vh]">
+    <div className="flex relative border-r-2 p-3 border-gray-500 flex-col sour-gummy-font h-[85vh]">
       <div className="flex justify-between flex-col gap-5 my-3 p-5">
         <div className="flex justify-between">
           <div className="flex items-center gap-1">
@@ -138,36 +138,44 @@ function LeftChat() {
               alt="ChatFusion"
               className="w-12 h-12 inline-block"
             />
-            <span className="text-2xl font-semibold active:animate-bounce cursor-pointer">
-              ChatFusion
-            </span>
+            <div className="relative group cursor-pointer">
+              <span className="text-3xl font-semibold">ChatFusion</span>
+              <span className="absolute top-0 left-0 text-3xl font-semibold text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-blue-500 transition-transform duration-300 transform scale-100 group-hover:-translate-y-2 group-hover:-rotate-3">
+                ChatFusion
+              </span>
+            </div>
           </div>
           <span>
             <img
               src="https://img.icons8.com/?size=100&id=21618&format=png&color=000000"
               alt="Settings"
-              className="filter invert w-5 h-5 cursor-pointer"
+              className="filter invert w-5 h-5 cursor-pointer hover:scale-105 transition-all active:scale-100"
               onClick={() => setShowMenu((prev) => !prev)}
             />
           </span>
           {showMenu && (
-            <div className="absolute right-10 top-14 bg-gray-200 text-gray-900 exo-font text-lg font-semibold py-2 px-3 border-2 border-gray-950 rounded-md rounded-tr-none">
+            <div className="absolute right-10 top-14 text-gray-900 exo-font text-lg font-semibold py-3 px-5 border-2 bg-green-200 border-gray-950 rounded-md rounded-tr-none">
               <h3
-                className="border-b-2 border-gray-900 pb-1 cursor-pointer"
+                className="border-b-2 border-gray-900 pb-1 cursor-pointer hover:scale-105 transition-all active:scale-100"
                 onClick={() => navigate("/profile")}
               >
                 My Profile
               </h3>
               <hr />
               <h3
-                className="border-b-2 border-gray-900 pb-1 cursor-pointer"
+                className="border-b-2 border-gray-900 pb-1 cursor-pointer hover:scale-105 transition-all active:scale-100"
                 onClick={() => logout()}
               >
                 LogOut
               </h3>
               <hr />
               <div className="flex gap-2 items-center">
-                <h3 className="cursor-pointer">Settings</h3>
+                <h3
+                  className="cursor-pointer hover:scale-105 transition-all active:scale-100"
+                  onClick={() => navigate("/profile")}
+                >
+                  Settings
+                </h3>
                 <img
                   src="https://img.icons8.com/?size=100&id=2969&format=png&color=000000"
                   alt=""
@@ -217,20 +225,22 @@ function LeftChat() {
               <input
                 value={friend.userData.avatar || ""}
                 readOnly
-                className="w-10 h-10 bg-purple-400 rounded-full text-2xl text-center"
+                className="w-11 h-11 bg-purple-400 rounded-full text-3xl text-center"
               />
               <div>
-                <h2 className="text-[17px] font-semibold">
+                <h2 className="text-[20px] font-semibold">
                   {friend.userData.name}
                 </h2>
                 <p
-                  className={`text-sm ${
+                  className={`text-[15px] ${
                     friend.messageSeen || friend.messageId === messageId
                       ? ""
                       : "text-green-400 font-bold "
                   }`}
                 >
-                  {friend.lastMessage || "no lastmsg"}
+                  {(friend.lastMessage.length > 27
+                    ? friend.lastMessage.slice(0, 27) + "..."
+                    : friend.lastMessage) || "no lastmsg"}
                 </p>
               </div>
             </div>
