@@ -19,11 +19,9 @@ function CenterChat() {
   const handlePlay = () => {
     setPlay(true);
 
-    const timer = setTimeout(() => {
+    setTimeout(() => {
       setPlay(false);
     }, 5000);
-
-    return () => clearTimeout(timer);
   };
 
   const sendMsg = async () => {

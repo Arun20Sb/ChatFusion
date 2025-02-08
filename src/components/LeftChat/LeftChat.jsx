@@ -1,6 +1,8 @@
-import { useContext, useState } from "react";
+import { useContext, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { db, logout } from "../../config/FirebaseConfig";
+import { writeBatch } from "firebase/firestore";
+
 import {
   arrayUnion,
   collection,
@@ -20,68 +22,66 @@ function LeftChat() {
   const [showMenu, setShowMenu] = useState(false);
   const [searchResult, setSearchResult] = useState(null);
   const [showSearch, setShowSearch] = useState(false);
-  // const [isSearching, setIsSearching] = useState(false);
 
   const { userData, chatData, setChatUser, setMessagesId, messageId } =
     useContext(AppContext);
-  const navigate = useNavigate();
 
-  const handleSearch = async (e) => {
+  const navigate = useNavigate();
+  const searchTimeout = useRef(null);
+
+  const handleSearch = (e) => {
     const searchValue = e.target.value.trim().toLowerCase();
     if (searchValue.length <= 3) return;
-    try {
-      if (searchValue) {
-        setShowSearch(true);
 
-        const userRef = collection(db, "USERS");
-        const userQuery = query(userRef, where("name", "==", searchValue));
-        const querySnapshot = await getDocs(userQuery);
+    clearTimeout(searchTimeout.current); // Clear previous timeout
+    searchTimeout.current = setTimeout(async () => {
+      try {
+        if (searchValue) {
+          setShowSearch(true);
+          const userRef = collection(db, "USERS");
+          const userQuery = query(userRef, where("name", "==", searchValue));
+          const querySnapshot = await getDocs(userQuery);
 
-        if (
-          !querySnapshot.empty &&
-          querySnapshot.docs[0].data().id !== userData.id
-        ) {
-          let userExist = false;
-          chatData.map((user) => {
-            if (user.rId === querySnapshot.docs[0].data().id) {
-              userExist = true;
+          if (
+            !querySnapshot.empty &&
+            querySnapshot.docs[0].data().id !== userData.id
+          ) {
+            let userExist = chatData.some(
+              (user) => user.rId === querySnapshot.docs[0].data().id
+            );
+            if (!userExist) {
+              setSearchResult(querySnapshot.docs[0].data());
             }
-          });
-          if (!userExist) {
-            setSearchResult(querySnapshot.docs[0].data());
+          } else {
+            setSearchResult(null);
           }
         } else {
-          setSearchResult(null);
+          setShowSearch(false);
         }
-      } else {
-        setShowSearch(false);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+        toast.error("Error fetching data");
       }
-    } catch (error) {
-      console.error("Error fetching data:", error);
-      toast.error("Error fetching data");
-    }
+    }, 500); // Delay API call by 500ms
   };
 
+  // Initiate and show chats:
   const showChats = async () => {
     if (!searchResult) return;
 
-    // Create COLLECTION-II - MESSAGES:
     const messagesRef = collection(db, "MESSAGES");
     const chatRef = collection(db, "CHATS");
+
     try {
       const newMessageRef = doc(messagesRef);
-
-      // Create the messages document
       await setDoc(newMessageRef, {
         createdTime: serverTimestamp(),
         messages: [],
       });
 
-      // Update the chat document with a reference to the message document
-      // Create a reference to a new chat document
-      // User A:
+      const batch = writeBatch(db); // Start a batch write
 
-      await updateDoc(doc(chatRef, searchResult.id), {
+      batch.update(doc(chatRef, searchResult.id), {
         chatData: arrayUnion({
           messageId: newMessageRef.id,
           lastMessage: "",
@@ -91,8 +91,7 @@ function LeftChat() {
         }),
       });
 
-      // User B:
-      await updateDoc(doc(chatRef, userData.id), {
+      batch.update(doc(chatRef, userData.id), {
         chatData: arrayUnion({
           messageId: newMessageRef.id,
           lastMessage: "",
@@ -102,6 +101,8 @@ function LeftChat() {
         }),
       });
 
+      await batch.commit(); // Execute both updates in a single operation
+
       setSearchResult(null);
       setChatUser(searchResult);
     } catch (error) {
@@ -110,6 +111,7 @@ function LeftChat() {
     }
   };
 
+  // Start the conversation:
   const selectChat = async (friend) => {
     try {
       setMessagesId(friend.messageId);
@@ -117,12 +119,18 @@ function LeftChat() {
 
       const userChatsRef = doc(db, "CHATS", userData.id);
       const userChatsSnapshot = await getDoc(userChatsRef);
+
+      if (!userChatsSnapshot.exists()) return; // Prevent crash if doc doesn't exist
+
       const userChatsData = userChatsSnapshot.data();
       const chatIndex = userChatsData.chatData.findIndex(
         (c) => c.messageId === friend.messageId
       );
-      userChatsData.chatData[chatIndex].messageSeen = true;
-      await updateDoc(userChatsRef, { chatData: userChatsData.chatData });
+
+      if (chatIndex !== -1) {
+        userChatsData.chatData[chatIndex].messageSeen = true;
+        await updateDoc(userChatsRef, { chatData: userChatsData.chatData });
+      }
     } catch (error) {
       console.error(error.message);
     }
@@ -197,6 +205,11 @@ function LeftChat() {
             placeholder="Search here.."
             className="w-full outline-none bg-gray-200 py-1 px-2"
             onChange={handleSearch}
+            onKeyDown={(e) => {
+              if (e.key === "Backspace" && e.target.value.length === 1) {
+                setShowSearch(false);
+              }
+            }}
           />
         </div>
       </div>

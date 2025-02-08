@@ -1,5 +1,5 @@
 import { onAuthStateChanged } from "firebase/auth";
-import { useContext, useEffect, useState } from "react";
+import { useContext, useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { auth, db } from "../../config/FirebaseConfig";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
@@ -11,41 +11,49 @@ function Profile() {
   const [emoji, setEmoji] = useState("");
   const [bio, setBio] = useState("");
   const [uid, setUid] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const { setUserData } = useContext(AppContext);
   const navigate = useNavigate();
 
-  const profileUpdate = async (e) => {
-    e.preventDefault();
-    try {
-      if (!emoji) {
-        toast.error("Upload profile picture😴");
-        return;
-      }
-      const docRef = doc(db, "USERS", uid);
-      if (emoji) {
-        await updateDoc(docRef, {
-          avatar: emoji,
-          bio: bio,
-          name: name,
-        });
-      }
-      toast.success("Profile updated!");
+  // Memoized function for updating profile
+  const profileUpdate = useCallback(
+    async (e) => {
+      e.preventDefault();
+      setLoading(true);
 
-      // Update local user data immediately:
-      const snap = await getDoc(docRef);
-      setUserData(snap.data());
-      navigate("/chat"); 
-      setName("");
-      setBio("");
-      setEmoji("");
-    } catch (error) {
-      console.error(error);
-      toast.error(`Error updating profile: ${error.message}`);
-    }
-  };
+      try {
+        if (!emoji) {
+          toast.error("Upload profile picture😴");
+          return;
+        }
 
-  // Fetch userData on auth state change:
+        const docRef = doc(db, "USERS", uid);
+        await updateDoc(docRef, { avatar: emoji, bio, name });
+
+        toast.success("Profile updated!");
+
+        // Fetch updated data
+        const snap = await getDoc(docRef);
+        if (snap.exists()) {
+          setUserData(snap.data());
+        }
+
+        navigate("/chat");
+        setName("");
+        setBio("");
+        setEmoji("");
+      } catch (error) {
+        console.error(error);
+        toast.error(`Error updating profile: ${error.message}`);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [emoji, bio, name, uid, setUserData, navigate]
+  );
+
+  // Fetch user data on auth state change
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
@@ -53,31 +61,26 @@ function Profile() {
         const docRef = doc(db, "USERS", user.uid);
         const docSnap = await getDoc(docRef);
 
-        if (docSnap.data().name) {
-          setName(docSnap.data().name);
-        }
-        if (docSnap.data().bio) {
-          setBio(docSnap.data().bio);
-        }
-        if (docSnap.data().avatar) {
-          setEmoji(docSnap.data().avatar);
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          setName(data.name || "");
+          setBio(data.bio || "");
+          setEmoji(data.avatar || "");
         }
       } else {
         navigate("/");
       }
     });
 
-    return () => unsubscribe(); // cleanup on unmont
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-  // ----------
+    return () => unsubscribe();
+  }, [navigate]);
 
   return (
     <div className="h-screen w-full bg-slate-300 flex items-center lacquer-font justify-center">
       <div className="w-[70%] h-[85vh] max-sm:block bg-gray-950 text-gray-300 mx-auto rounded-xl grid grid-cols-2 border-2 border-gray-950">
         <form
           onSubmit={profileUpdate}
-          className="bg-gray-900 flex flex-col gap-5 px-7 py-7 rounded-tl-lg rounded-bl-xl "
+          className="bg-gray-900 flex flex-col gap-5 px-7 py-7 rounded-tl-lg rounded-bl-xl"
         >
           <h3 className="text-4xl mt-4 mb-7 font-bold underline">
             My Profile Details
@@ -114,9 +117,14 @@ function Profile() {
           ></textarea>
           <button
             type="submit"
-            className="border-2 py-2 bg-purple-800 hover:border-gray-400 active:translate-y-1 shadow-md duration-200 font-bold text-xl px-7 rounded cursor-pointer transition-all flex items-center gap-2 justify-center"
+            disabled={loading}
+            className={`border-2 py-2 bg-purple-800 ${
+              loading
+                ? "opacity-50 cursor-not-allowed"
+                : "hover:border-gray-400"
+            } active:translate-y-1 shadow-md duration-200 font-bold text-xl px-7 rounded cursor-pointer transition-all flex items-center gap-2 justify-center`}
           >
-            Save
+            {loading ? "Saving..." : "Save"}
           </button>
         </form>
         <div className="relative">

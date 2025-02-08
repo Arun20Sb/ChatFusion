@@ -6,11 +6,13 @@ import { AppContext } from "../../context/AppContextProvider";
 
 const Chat = () => {
   const { chatData, userData } = useContext(AppContext);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     if (chatData && userData) {
       setIsLoading(false);
+    } else {
+      setIsLoading(true);
     }
   }, [chatData, userData]);
 
