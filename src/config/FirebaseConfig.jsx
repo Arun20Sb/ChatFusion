@@ -29,8 +29,18 @@ const db = getFirestore(app);
 // Sign Up Function
 const SignUp = async (username, email, password) => {
   try {
+    // Create user authentication
     const res = await createUserWithEmailAndPassword(auth, email, password);
     const user = res.user;
+
+    // Ensure username is not empty
+    if (!username.trim()) {
+      throw new Error("Username cannot be empty");
+    }
+
+    if (password.length < 6) {
+      throw new Error("Weak password, atleast 8 Characters");
+    }
 
     // Create User Document in Firestore
     await setDoc(doc(db, "USERS", user.uid), {
@@ -44,11 +54,14 @@ const SignUp = async (username, email, password) => {
     });
 
     // Create User Chat Document
-    await setDoc(doc(db, "CHATS", user.uid), { chatData: [] });
+    await setDoc(doc(db, "CHATS", user.uid), {
+      chatData: [],
+    });
 
     toast.success("User created successfully! 🎉");
+    toast.success("You can login now !!");
   } catch (error) {
-    console.error(error);
+    console.error("Error in SignUp:", error);
     toast.error(getErrorMessage(error));
   }
 };

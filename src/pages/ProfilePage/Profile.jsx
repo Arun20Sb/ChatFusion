@@ -1,145 +1,142 @@
-import { onAuthStateChanged } from "firebase/auth";
-import { useContext, useEffect, useState, useCallback } from "react";
+import { useContext, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { auth, db } from "../../config/FirebaseConfig";
+import { db } from "../../config/FirebaseConfig";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { toast } from "react-toastify";
 import { AppContext } from "../../context/AppContextProvider";
+import { User, SmilePlus, FileText, Loader, Save } from "lucide-react";
 
 function Profile() {
-  const [name, setName] = useState("");
-  const [emoji, setEmoji] = useState("");
-  const [bio, setBio] = useState("");
-  const [uid, setUid] = useState("");
+  const [formData, setFormData] = useState({ name: "", emoji: "", bio: "" });
   const [loading, setLoading] = useState(false);
 
-  const { setUserData } = useContext(AppContext);
+  const { userData, setUserData } = useContext(AppContext); 
   const navigate = useNavigate();
 
-  // Memoized function for updating profile
-  const profileUpdate = useCallback(
-    async (e) => {
-      e.preventDefault();
-      setLoading(true);
+  // Pre-fill form data from context
+  useState(() => {
+    if (userData) {
+      setFormData({
+        name: userData.name || "",
+        bio: userData.bio || "",
+        emoji: userData.avatar || "",
+      });
+    }
+  }, [userData]);
 
-      try {
-        if (!emoji) {
-          toast.error("Upload profile picture😴");
-          return;
-        }
+  // Handle input changes
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    if (name === "emoji" && value.length > 2) return;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
 
-        const docRef = doc(db, "USERS", uid);
-        await updateDoc(docRef, { avatar: emoji, bio, name });
+  // Update profile
+  const profileUpdate = async (e) => {
+    e.preventDefault();
+    if (!formData.emoji.trim()) {
+      toast.error("Please set a profile emoji!");
+      return;
+    }
 
-        toast.success("Profile updated!");
+    setLoading(true);
+    try {
+      const docRef = doc(db, "USERS", userData.id); 
+      await updateDoc(docRef, {
+        avatar: formData.emoji,
+        bio: formData.bio,
+        name: formData.name,
+      });
 
-        // Fetch updated data
-        const snap = await getDoc(docRef);
-        if (snap.exists()) {
-          setUserData(snap.data());
-        }
-
+      const snap = await getDoc(docRef);
+      if (snap.exists()) {
+        setUserData(snap.data()); // Update context
+        toast.success("Profile updated successfully!");
         navigate("/chat");
-        setName("");
-        setBio("");
-        setEmoji("");
-      } catch (error) {
-        console.error(error);
-        toast.error(`Error updating profile: ${error.message}`);
-      } finally {
-        setLoading(false);
       }
-    },
-    [emoji, bio, name, uid, setUserData, navigate]
-  );
-
-  // Fetch user data on auth state change
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        setUid(user.uid);
-        const docRef = doc(db, "USERS", user.uid);
-        const docSnap = await getDoc(docRef);
-
-        if (docSnap.exists()) {
-          const data = docSnap.data();
-          setName(data.name || "");
-          setBio(data.bio || "");
-          setEmoji(data.avatar || "");
-        }
-      } else {
-        navigate("/");
-      }
-    });
-
-    return () => unsubscribe();
-  }, [navigate]);
+    } catch (error) {
+      console.error("Profile update error:", error);
+      toast.error("Failed to update profile. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <div className="h-screen w-full bg-slate-300 flex items-center lacquer-font justify-center">
-      <div className="w-[70%] h-[85vh] max-sm:block bg-gray-950 text-gray-300 mx-auto rounded-xl grid grid-cols-2 border-2 border-gray-950">
-        <form
-          onSubmit={profileUpdate}
-          className="bg-gray-900 flex flex-col gap-5 px-7 py-7 rounded-tl-lg rounded-bl-xl"
-        >
-          <h3 className="text-4xl mt-4 mb-7 font-bold underline">
-            My Profile Details
-          </h3>
-          <label
-            htmlFor="emojiInput"
-            className="mb-7 text-xl cursor-pointer flex gap-0 justify-center items-center"
-          >
+    <div className="min-h-screen flex items-center justify-center p-4">
+      <div className="max-w-4xl w-full bg-white shadow-lg rounded-xl p-6">
+        <h1 className="text-2xl font-bold flex items-center gap-2">
+          <User className="w-6 h-6" /> Profile Settings
+        </h1>
+
+        <form onSubmit={profileUpdate} className="space-y-6">
+          <div>
+            <label className="text-sm font-medium flex items-center gap-2">
+              <SmilePlus className="w-4 h-4" /> Profile Emoji
+            </label>
             <input
               type="text"
+              name="emoji"
               maxLength="2"
-              onChange={(e) => setEmoji(e.target.value)}
-              value={emoji}
-              pattern="[\p{Emoji}]"
-              id="emojiInput"
-              className="border-2 mr-3 rounded-full w-20 h-20 text-4xl text-center leading-tight outline-none text-gray-900"
+              value={formData.emoji}
+              onChange={handleInputChange}
+              className="w-full text-center text-2xl h-14 border rounded-lg"
+              placeholder="😊"
             />
-            👈🏻 Enter your emoji here
-          </label>
-          <input
-            type="text"
-            onChange={(e) => setName(e.target.value)}
-            value={name}
-            placeholder="Enter Your name"
-            required
-            className="py-2 px-3 rounded-sm border-none outline-none text-gray-900"
-          />
-          <textarea
-            placeholder="Write something about yourself.."
-            onChange={(e) => setBio(e.target.value)}
-            value={bio}
-            required
-            className="py-2 px-3 rounded-sm border-none outline-none text-gray-900"
-          ></textarea>
+          </div>
+
+          <div>
+            <label className="text-sm font-medium flex items-center gap-2">
+              <User className="w-4 h-4" /> Name
+            </label>
+            <input
+              type="text"
+              name="name"
+              value={formData.name}
+              onChange={handleInputChange}
+              placeholder="Enter your name"
+              required
+              className="w-full px-4 py-2 border rounded-lg"
+            />
+          </div>
+
+          <div>
+            <label className="text-sm font-medium flex items-center gap-2">
+              <FileText className="w-4 h-4" /> Bio
+            </label>
+            <textarea
+              name="bio"
+              value={formData.bio}
+              onChange={handleInputChange}
+              placeholder="Write something about yourself..."
+              required
+              className="w-full px-4 py-2 border rounded-lg h-32 resize-none"
+            />
+          </div>
+
           <button
             type="submit"
             disabled={loading}
-            className={`border-2 py-2 bg-purple-800 ${
-              loading
-                ? "opacity-50 cursor-not-allowed"
-                : "hover:border-gray-400"
-            } active:translate-y-1 shadow-md duration-200 font-bold text-xl px-7 rounded cursor-pointer transition-all flex items-center gap-2 justify-center`}
+            className={`w-full bg-blue-600 text-white py-2 px-4 rounded-lg font-medium
+              ${loading ? "opacity-50 cursor-not-allowed" : "hover:bg-blue-700"}
+              flex items-center justify-center gap-2`}
           >
-            {loading ? "Saving..." : "Save"}
+            {loading ? (
+              <Loader className="w-4 h-4 animate-spin" />
+            ) : (
+              <Save className="w-4 h-4" />
+            )}
+            {loading ? "Saving..." : "Save Changes"}
           </button>
         </form>
-        <div className="relative">
-          <img
-            src="/profile2.jpg"
-            alt=""
-            className="h-full w-full absolute z-10 rounded-tr-xl rounded-br-xl object-cover"
-          />
-          <input
-            type="text"
-            value={emoji}
-            readOnly
-            className="absolute z-20 left-1/2 -translate-x-1/2 top-1/2 transform -translate-y-1/2 rounded-full w-60 h-60 object-cover border-4 border-purple-500 bg-gray-900 text-8xl text-center"
-          />
-        </div>
+
+        {/* Button to go to chat */}
+        <button
+          onClick={() => navigate("/chat")}
+          className="mt-4 w-full bg-green-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-green-700 transition-all"
+        >
+          Go to Chat Section
+        </button>
       </div>
     </div>
   );

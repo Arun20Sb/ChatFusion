@@ -1,5 +1,5 @@
 import { createContext, useEffect, useState } from "react";
-import { auth, db } from "../config/FirebaseConfig";
+import { db } from "../config/FirebaseConfig";
 import { doc, getDoc, onSnapshot, updateDoc } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 
@@ -7,80 +7,88 @@ export const AppContext = createContext();
 
 export const AppContextProvider = (props) => {
   const [userData, setUserData] = useState(null);
-  const [chatData, setChatData] = useState([]);
-  
+  const [UserChatData, setUserChatData] = useState([]);
+
+  const [chatUser, setChatUser] = useState(null);
   const [messagesId, setMessagesId] = useState(null);
   const [messages, setMessages] = useState([]);
-  const [chatUser, setChatUser] = useState(null);
-  
+
   const navigate = useNavigate();
 
-  // Load user data from Firestore
-  const LoadingUser = async (uid) => {
+  // Once logged/SignUp, fetch UserData{}
+  const FetchUsersData = async (uid) => {
     try {
       const userRef = doc(db, "USERS", uid);
-      const userSnap = await getDoc(userRef);
+      const userSnapShot = await getDoc(userRef);
 
-      const usersData = userSnap.data();
-      setUserData(usersData);
+      if (userSnapShot.exists()) {
+        const userRawData = userSnapShot.data();
+        setUserData(userRawData);
 
-      if (usersData.avatar && usersData.name) {
-        navigate("/chat");
-      } else {
-        navigate("/profile");
-      }
-
-      // lastSeen here:
-      setInterval(async () => {
-        if (auth.chatUser) {
-          await updateDoc(userRef, {
-            lastSeen: Date.now(),
-          });
+        if (userRawData.avatar && userRawData.name) {
+          navigate("/chat");
+        } else {
+          navigate("/profile");
         }
-      }, 60000 * 5);
+
+        // Now update the lastSeen of User now:
+        await updateDoc(userRef, { lastSeen: Date.now() });
+      } else {
+        console.log("No such user found! ❌");
+      }
     } catch (error) {
-      console.error("Error loading user:", error);
+      console.error("Error fetching user Data, refresh please!!", error);
     }
   };
 
-  // Fetch chat data when userData changes
+  // Once above UserData Fetched, fetch chatData[{A->B}, {A->C}...]
   useEffect(() => {
-    if (userData) {
-      const chatRef = doc(db, "CHATS", userData.id);
+    if (!userData?.id) return;
 
-      const unsub = onSnapshot(chatRef, async (res) => {
-        if (res.exists()) {
-          const chatItems = res.data().chatData;
-          const tempData = [];
+    const UserChatRef = doc(db, "CHATS", userData.id);
+    // RealTime SnapShot:
+    const unsub = onSnapshot(UserChatRef, async (chats) => {
+      if (chats.exists()) {
+        const userChatData = chats.data().chatData; // chatData[{A->B}, {A->C}...]
+        const tempChatData = [];
 
-          for(const item of chatItems){
-            const userRef = doc(db, "USERS", item.rId);
-            const userSnap = await getDoc(userRef);
-            const userData= userSnap.data();
-            tempData.push({...item, userData})
+        // Fetch User Data for Each Chat:
+        for (const chat of userChatData) {
+          const userRef = doc(db, "USERS", chat.rId);
+          const userSnapShot = await getDoc(userRef);
+
+          if (userSnapShot.exists()) {
+            tempChatData.push({ ...chat, userData: userSnapShot.data() });
           }
-
-          // const chatList = await Promise.all(tempData);
-          setChatData(tempData.sort((a, b) => b.updatedAt - a.updatedAt));
         }
-      });
 
-      return () => unsub();
-    }
-  }, [userData]);
+        // Sort messages by updatedAT:
+        setUserChatData((prevData) => {
+          const sortedData = tempChatData.sort(
+            (a, b) => b.updatedAt - a.updatedAt
+          );
+          return JSON.stringify(prevData) !== JSON.stringify(sortedData)
+            ? sortedData
+            : prevData;
+        });
+      }
+    });
+
+    return () => unsub();
+  }, [userData?.id]);
 
   const value = {
     userData,
     setUserData,
-    chatData,
-    setChatData,
-    LoadingUser,
+    UserChatData,
+    setUserChatData,
+    FetchUsersData,
+    chatUser,
+    setChatUser,
     messagesId,
     setMessagesId,
     messages,
     setMessages,
-    chatUser,
-    setChatUser,
   };
 
   return (

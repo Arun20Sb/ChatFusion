@@ -124,12 +124,12 @@ function CenterChat() {
         <div className="flex items-center gap-2">
           <input
             value={
-              chatUser.userData.avatar || chatUser.userData.name.slice(0, 2)
+              chatUser.userData?.avatar || chatUser.userData.name.slice(0, 2)
             }
             readOnly
             className="w-11 h-11 bg-purple-400 rounded-full text-2xl text-center"
           />
-          <h2 className="text-2xl">{chatUser.userData.name}</h2>
+          <h2 className="text-2xl">{chatUser.userData?.name}</h2>
         </div>
         <img
           src="https://img.icons8.com/?size=100&id=iO8CP6EX5jq2&format=png&color=000000"
@@ -166,7 +166,7 @@ function CenterChat() {
                   value={
                     msg.sId === userData.id
                       ? userData.avatar
-                      : chatUser.userData.avatar
+                      : chatUser.userData?.avatar
                   }
                   alt="Avatar"
                   className="bg-green-300 w-10 h-10 rounded-full p-1 text-center text-xl"
@@ -189,7 +189,7 @@ function CenterChat() {
                   value={
                     msg.sId === userData.id
                       ? userData.avatar
-                      : chatUser.userData.avatar
+                      : chatUser.userData?.avatar
                   }
                   alt="Avatar"
                   className="bg-green-300 w-10 h-10 rounded-full p-1 text-center text-xl"
