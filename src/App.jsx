@@ -1,14 +1,14 @@
 import { useContext, useEffect } from "react";
 import { Route, Routes, useNavigate } from "react-router-dom";
-import { AppContext } from "./context/AppContextProvider";
+import { AppContext } from "./context/AppContextProvider.jsx";
 import { ToastContainer } from "react-toastify";
-import { auth } from "./config/FirebaseConfig";
+import { auth } from "./config/FirebaseConfig.jsx";
 import { onAuthStateChanged } from "firebase/auth";
 
-import Chat from "./pages/ChatPage/Chat";
-import Login from "./pages/LoginPage/Login";
-import Profile from "./pages/ProfilePage/Profile";
-import Setting from "./pages/SettingPage/Setting";
+import Chat from "./pages/ChatPage/Chat.jsx";
+import Login from "./pages/LoginPage/Login.jsx";
+import Profile from "./pages/ProfilePage/Profile.jsx";
+import Setting from "./pages/SettingPage/Setting.jsx";
 
 function App() {
   const { FetchUsersData } = useContext(AppContext);

@@ -1,5 +1,5 @@
 import { useContext, useEffect, useState } from "react";
-import { AppContext } from "../../context/AppContextProvider";
+import { AppContext } from "../../context/AppContextProvider.jsx";
 import ChatPlaceholder from "./ChatPlaceHolder.jsx";
 import {
   arrayUnion,
