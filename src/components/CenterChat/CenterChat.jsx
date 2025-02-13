@@ -10,9 +10,9 @@ import {
 } from "firebase/firestore";
 import { db } from "../../config/FirebaseConfig";
 
-function CenterChat() {
+function CenterChat({ setSelectedUser }) {
   const [input, setInput] = useState("");
-  const { userData, messagesId, chatUser, messages, setMessages } =
+  const { userData, messagesId, chatUser, messages, setMessages, theme } =
     useContext(AppContext);
 
   const [play, setPlay] = useState(false);
@@ -120,10 +120,19 @@ function CenterChat() {
   }, [messagesId]);
 
   return chatUser ? (
-    <div className="relative border-b-2 border-gray-900 flex flex-col h-[100vh]">
+    <div className="relative border-b-2 border-gray-900 text-xl flex flex-col h-[100vh]">
       {/* User Details */}
       <div className="flex justify-between items-center mt-0 border-b-2 w-full py-3 px-3 border-gray-200 border-t-gray-950 border-2">
         <div className="flex items-center gap-2">
+          {/* Back Button - Only Show on Mobile */}
+          <button onClick={() => setSelectedUser(null)} className="md:hidden cursor-pointer">
+            <img
+              className="w-12 h-12 cursor-pointer"
+              src="https://img.icons8.com/?size=100&id=52959&format=png&color=000000"
+              alt="back"
+            />
+          </button>
+
           <input
             value={
               chatUser.userData?.avatar || chatUser.userData?.name.slice(0, 2)
@@ -133,6 +142,7 @@ function CenterChat() {
           />
           <h2 className="text-2xl">{chatUser.userData?.name}</h2>
         </div>
+
         <img
           src="https://img.icons8.com/?size=100&id=iO8CP6EX5jq2&format=png&color=000000"
           alt="Settings"
@@ -145,9 +155,9 @@ function CenterChat() {
 
       {/* Chat section */}
       <div
-        className="bg-violet-300 h-full w-full p-6 relative overflow-y-scroll flex flex-col-reverse"
+        className="bg-violet-300 h-full w-full p-6 relative overflow-y-scroll flex flex-col-reverse max-sm:max-w-[420px]"
         style={{
-          backgroundImage: `url("/anime7.jpg")`,
+          backgroundImage: `url(${theme})`,
           backgroundPosition: "center",
           backgroundRepeat: "no-repeat",
           backgroundSize: "cover",
@@ -235,13 +245,13 @@ function CenterChat() {
             onClick={sendMsg}
             src="https://img.icons8.com/?size=100&id=93330&format=png&color=000000"
             alt="Send"
-            className="w-8 h-8 cursor-pointer bg-sky-400 p-1 rounded-full"
+            className="w-12 h-12 cursor-pointer bg-sky-400 p-1 rounded-full"
           />
         </div>
       </div>
     </div>
   ) : (
-    <div className="relative border-b-2 border-gray-900 h-full w-full flex">
+    <div className="relative top-[-32px] border-b-2 border-gray-900 h-full w-full flex">
       <ChatPlaceholder />
     </div>
   );

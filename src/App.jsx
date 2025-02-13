@@ -8,6 +8,7 @@ import { onAuthStateChanged } from "firebase/auth";
 import Chat from "./pages/ChatPage/Chat";
 import Login from "./pages/LoginPage/Login";
 import Profile from "./pages/ProfilePage/Profile";
+import Setting from "./pages/SettingPage/Setting";
 
 function App() {
   const { FetchUsersData } = useContext(AppContext);
@@ -36,6 +37,7 @@ function App() {
         <Route path="/" element={<Login />} />
         <Route path="/chat" element={<Chat />} />
         <Route path="/profile" element={<Profile />} />
+        <Route path="/setting" element={<Setting />} />
       </Routes>
     </>
   );

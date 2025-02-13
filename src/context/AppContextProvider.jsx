@@ -13,6 +13,8 @@ export const AppContextProvider = (props) => {
   const [messagesId, setMessagesId] = useState(null);
   const [messages, setMessages] = useState([]);
 
+  const [theme, setTheme] = useState("");
+
   const navigate = useNavigate();
 
   // Once logged/SignUp, fetch UserData{}
@@ -89,6 +91,8 @@ export const AppContextProvider = (props) => {
     setMessagesId,
     messages,
     setMessages,
+    theme,
+    setTheme,
   };
 
   return (

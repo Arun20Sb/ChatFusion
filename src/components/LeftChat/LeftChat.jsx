@@ -16,13 +16,18 @@ import { AppContext } from "../../context/AppContextProvider";
 import { toast } from "react-toastify";
 import { Search, Settings, LogOut, User, MessageSquare } from "lucide-react";
 
-function LeftChat() {
+function LeftChat({ setSelectedUser }) {
   const [showMenu, setShowMenu] = useState(false);
-  const [searchResult,  setSearchResult] = useState(null);
+  const [searchResult, setSearchResult] = useState(null);
   const [currentUserId, setCurrentUserId] = useState(null);
 
-  const { setChatUser, UserChatData, setUserChatData, setMessagesId, messageId } =
-    useContext(AppContext);
+  const {
+    setChatUser,
+    UserChatData,
+    setUserChatData,
+    setMessagesId,
+    messageId,
+  } = useContext(AppContext);
   console.log(UserChatData);
 
   const navigate = useNavigate();
@@ -56,7 +61,9 @@ function LeftChat() {
 
         if (foundUser.id !== currentUserId) {
           // Check if user is already in chat list
-          const userExist = UserChatData?.some((chat) => chat.rId === foundUser.id);
+          const userExist = UserChatData?.some(
+            (chat) => chat.rId === foundUser.id
+          );
 
           if (!userExist) {
             setSearchResult(foundUser);
@@ -150,6 +157,9 @@ function LeftChat() {
   // Start chatting by selecting the friend
   const selectChat = async (friend) => {
     if (!currentUserId) return;
+    setSelectedUser(true);
+
+    navigate("/chat");
 
     try {
       setMessagesId(friend.messageId);
@@ -186,14 +196,14 @@ function LeftChat() {
   }
 
   return (
-    <div className="flex relative border-r-2 p-3 border-gray-500 flex-col h-[85vh]">
+    <div className="flex relative border-r-2 p-3 border-gray-500 flex-col text-lg h-[85vh]">
       <div className="flex justify-between flex-col gap-5 my-3 p-5">
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-2">
             <MessageSquare className="w-8 h-8" />
             <div className="relative group cursor-pointer">
-              <span className="text-2xl font-semibold">ChatFusion</span>
-              <span className="absolute top-0 left-0 text-2xl font-semibold text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-blue-500 transition-transform duration-300 transform scale-100 group-hover:-translate-y-1">
+              <span className="text-3xl font-semibold">ChatFusion</span>
+              <span className="absolute top-0 left-0 text-3xl font-semibold text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-blue-500 transition-transform duration-300 transform scale-100 group-hover:-translate-y-1">
                 ChatFusion
               </span>
             </div>
@@ -201,7 +211,7 @@ function LeftChat() {
 
           <div className="relative">
             <Settings
-              className="w-5 h-5 cursor-pointer hover:rotate-90 transition-all duration-300"
+              className="w-7 h-7 cursor-pointer hover:rotate-90 transition-all duration-300"
               onClick={() => setShowMenu((prev) => !prev)}
             />
 
@@ -213,6 +223,13 @@ function LeftChat() {
                 >
                   <User className="w-4 h-4" />
                   <span>My Profile</span>
+                </div>
+                <div
+                  className="flex items-center gap-2 px-4 py-3 hover:bg-gray-100 cursor-pointer"
+                  onClick={() => navigate("/setting")}
+                >
+                  <User className="w-4 h-4" />
+                  <span>Themes</span>
                 </div>
                 <div
                   className="flex items-center gap-2 px-4 py-3 hover:bg-gray-100 cursor-pointer"
