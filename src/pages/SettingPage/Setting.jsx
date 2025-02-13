@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
-import ChatPlaceholder from "../../components/CenterChat/ChatPlaceHolder";
+import ChatPlaceholder from "../../components/CenterChat/ChatPlaceholder";
+
 
 const Setting = () => {
   const navigate = useNavigate();
