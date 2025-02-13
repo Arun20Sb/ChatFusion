@@ -1,9 +1,7 @@
-import { useContext, useState, useRef, useEffect } from "react";
+import { useContext, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { db, logout, auth } from "../../config/FirebaseConfig";
 import {
-  arrayRemove,
-  arrayUnion,
   collection,
   doc,
   getDoc,
@@ -13,7 +11,6 @@ import {
   serverTimestamp,
   setDoc,
   updateDoc,
-  writeBatch,
 } from "firebase/firestore";
 import { AppContext } from "../../context/AppContextProvider";
 import { toast } from "react-toastify";
@@ -22,15 +19,12 @@ import { Search, Settings, LogOut, User, MessageSquare } from "lucide-react";
 function LeftChat() {
   const [showMenu, setShowMenu] = useState(false);
   const [searchResult, setSearchResult] = useState(null);
-  const [showSearch, setShowSearch] = useState(false);
-  const [isSearching, setIsSearching] = useState(false);
   const [currentUserId, setCurrentUserId] = useState(null);
 
-  const { userData, chatData, setChatUser, setMessagesId, messageId } =
+  const { chatData, setChatUser, setMessagesId, messageId } =
     useContext(AppContext);
 
   const navigate = useNavigate();
-  const searchTimeout = useRef(null);
 
   // Set current user ID on component mount
   useEffect(() => {
@@ -41,63 +35,50 @@ function LeftChat() {
     }
   }, [navigate]);
 
+  // Handle Search:
   const handleSearch = async (e) => {
     const searchValue = e.target.value.trim();
-    if (!searchValue || !currentUserId) {
-      setShowSearch(false);
+    if (!searchValue || searchValue.length < 3 || !currentUserId) {
       setSearchResult(null);
       return;
     }
 
-    clearTimeout(searchTimeout.current);
-    searchTimeout.current = setTimeout(async () => {
-      try {
-        setIsSearching(true);
-        setShowSearch(true);
+    try {
+      // Query only by username
+      const userRef = collection(db, "USERS");
+      const userQuery = query(userRef, where("username", "==", searchValue));
+      const querySnapshot = await getDocs(userQuery);
 
-        // Query only by name
-        const userRef = collection(db, "USERS");
-        const userQuery = query(userRef, where("username", "==", searchValue));
+      if (!querySnapshot.empty) {
+        // Get the first matched user (Firestore always returns an array)
+        const foundUser = querySnapshot.docs[0].data();
 
-        const querySnapshot = await getDocs(userQuery);
+        if (foundUser.id !== currentUserId) {
+          // Check if user is already in chat list
+          const userExist = chatData?.some((chat) => chat.rId === foundUser.id);
 
-        if (!querySnapshot.empty) {
-          // Filter out current user in JavaScript
-          const foundUsers = querySnapshot.docs.map((doc) => doc.data());
-          const foundUser = foundUsers.find(
-            (user) => user.id !== currentUserId
-          );
-
-          if (foundUser) {
-            // Check if user is already in chat list
-            const userExist = chatData?.some(
-              (chat) => chat.rId === foundUser.id
-            );
-
-            if (!userExist) {
-              setSearchResult(foundUser);
-            } else {
-              setSearchResult(null);
-              toast.info("You already have a chat with this user");
-            }
+          if (!userExist) {
+            setSearchResult(foundUser);
           } else {
             setSearchResult(null);
-            toast.info("No user found with that name");
+            toast.info("You already have a chat with this user");
           }
         } else {
           setSearchResult(null);
           toast.info("No user found with that name");
         }
-      } catch (error) {
-        console.error("Search error:", error);
-        toast.error("Error searching for user");
+      } else {
         setSearchResult(null);
-      } finally {
-        setIsSearching(false);
+        toast.info("No user found with that name");
       }
-    }, 500);
+    } catch (error) {
+      console.error("Search error:", error);
+      toast.error("Error searching for user");
+      setSearchResult(null);
+    }
   };
 
+  // Show Chats b/w users:
   const showChats = async () => {
     if (!searchResult || !currentUserId) return;
 
@@ -112,57 +93,45 @@ function LeftChat() {
         messages: [],
       });
 
-      const batch = writeBatch(db);
+      // Fetch existing chat data for both users
+      const chatSnap1 = await getDoc(doc(chatRef, searchResult.id));
+      const chatSnap2 = await getDoc(doc(chatRef, currentUserId));
 
-      // Get current timestamp
-      const timestamp = new Date();
-
-      // Get existing chat data for both users
-      const [chatSnap1, chatSnap2] = await Promise.all([
-        getDoc(doc(chatRef, searchResult.id)),
-        getDoc(doc(chatRef, currentUserId)),
-      ]);
-
-      const chatData1 = chatSnap1.exists()
-        ? chatSnap1.data().chatData || []
-        : [];
-      const chatData2 = chatSnap2.exists()
-        ? chatSnap2.data().chatData || []
-        : [];
+      const chatData1 = chatSnap1.data()?.chatData || [];
+      const chatData2 = chatSnap2.data()?.chatData || [];
 
       const newChatEntry = {
         messageId: newMessageRef.id,
         lastMessage: "",
         rId: currentUserId,
-        updatedAt: timestamp, // Use JavaScript Date instead
+        updatedAt: new Date(),
         messageSeen: true,
       };
 
-      // Update both users' chat data
-      batch.set(
+      // Update chat for searchResult
+      await setDoc(
         doc(chatRef, searchResult.id),
         { chatData: [...chatData1, newChatEntry] },
         { merge: true }
       );
 
-      batch.set(
+      // Update chat for currentUser
+      await setDoc(
         doc(chatRef, currentUserId),
         { chatData: [...chatData2, { ...newChatEntry, rId: searchResult.id }] },
         { merge: true }
       );
 
-      await batch.commit();
       toast.success("Chat created successfully!");
-
       setSearchResult(null);
       setChatUser(searchResult);
-      setShowSearch(false);
     } catch (error) {
       console.error("Error creating chat:", error);
       toast.error("Failed to create chat");
     }
   };
 
+  // Start chatting by selecting the friend:
   const selectChat = async (friend) => {
     if (!currentUserId) return;
 
@@ -172,20 +141,16 @@ function LeftChat() {
 
       const userChatsRef = doc(db, "CHATS", currentUserId);
       const userChatsSnapshot = await getDoc(userChatsRef);
-
       if (!userChatsSnapshot.exists()) return;
 
-      const userChatsData = userChatsSnapshot.data();
-      const chatEntry = userChatsData.chatData.find(
-        (c) => c.messageId === friend.messageId
-      );
+      const chatData = userChatsSnapshot.data()?.chatData || [];
+      const chatEntry = chatData.find((c) => c.messageId === friend.messageId);
 
       if (chatEntry && !chatEntry.messageSeen) {
         await updateDoc(userChatsRef, {
-          chatData: arrayRemove(chatEntry),
-        });
-        await updateDoc(userChatsRef, {
-          chatData: arrayUnion({ ...chatEntry, messageSeen: true }),
+          chatData: chatData.map((c) =>
+            c.messageId === friend.messageId ? { ...c, messageSeen: true } : c
+          ),
         });
       }
     } catch (error) {
@@ -250,7 +215,6 @@ function LeftChat() {
               onChange={handleSearch}
               onKeyDown={(e) => {
                 if (e.key === "Escape") {
-                  setShowSearch(false);
                   setSearchResult(null);
                 }
               }}
@@ -260,7 +224,7 @@ function LeftChat() {
       </div>
 
       <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 hover:scrollbar-thumb-gray-400">
-        {showSearch && searchResult ? (
+        {searchResult ? (
           <div
             className="flex items-center gap-3 p-3 hover:bg-gray-700 cursor-pointer rounded-lg transition-colors"
             onClick={showChats}

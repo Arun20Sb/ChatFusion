@@ -12,10 +12,10 @@ import { db } from "../../config/FirebaseConfig";
 
 function CenterChat() {
   const [input, setInput] = useState("");
-  const [play, setPlay] = useState(false);
   const { userData, messagesId, chatUser, messages, setMessages } =
     useContext(AppContext);
 
+  const [play, setPlay] = useState(false);
   const handlePlay = () => {
     setPlay(true);
 
@@ -24,6 +24,7 @@ function CenterChat() {
     }, 5000);
   };
 
+  // Send message to friend:
   const sendMsg = async () => {
     if (!input.trim() || !messagesId) return;
 
@@ -37,32 +38,29 @@ function CenterChat() {
         }),
       });
 
+      // Update chat data for both users
       const userIds = [chatUser.rId, userData.id];
 
-      // Fetch user chats and update them
-      userIds.forEach(async (id) => {
+      for (const id of userIds) {
         const userChatsRef = doc(db, "CHATS", id);
         const userChatsSnapshot = await getDoc(userChatsRef);
 
-        if (!userChatsSnapshot.exists()) return;
+        if (!userChatsSnapshot.exists()) continue;
 
         const userChatData = userChatsSnapshot.data();
 
-        // Find the index of the chatData entry that matches the current messageId
+        // Find the chat entry for the current conversation
         const chatIndex = userChatData.chatData.findIndex(
           (c) => c.messageId === messagesId
         );
 
         if (chatIndex !== -1) {
-          // If chatData entry exists, update it
-          const updatedChat = { ...userChatData.chatData[chatIndex] };
-          updatedChat.lastMessage = input.slice(0, 27); // Update last message text
-          updatedChat.updatedAt = Date.now();
-          if (updatedChat.rId === userData.id) {
-            updatedChat.messageSeen = false; // Mark message as unseen for user
+          // If chat entry exists, update it
+          userChatData.chatData[chatIndex].lastMessage = input.slice(0, 27);
+          userChatData.chatData[chatIndex].updatedAt = Date.now();
+          if (id === chatUser.rId) {
+            userChatData.chatData[chatIndex].messageSeen = false; // Mark as unseen for receiver
           }
-
-          userChatData.chatData[chatIndex] = updatedChat; // Update chat data
         } else {
           // If no existing entry, add a new one
           userChatData.chatData.push({
@@ -74,9 +72,9 @@ function CenterChat() {
           });
         }
 
-        // Update the entire chat data array
+        // Update chat data in Firestore
         await updateDoc(userChatsRef, { chatData: userChatData.chatData });
-      });
+      }
     } catch (error) {
       console.error("Error sending message:", error.message);
     } finally {
@@ -115,7 +113,8 @@ function CenterChat() {
 
       return () => unSubscribe();
     }
-  }, [messagesId, setMessages]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [messagesId]);
 
   return chatUser ? (
     <div className="relative border-b-2 border-gray-900 flex flex-col h-[100vh]">
