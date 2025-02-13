@@ -18,11 +18,12 @@ import { Search, Settings, LogOut, User, MessageSquare } from "lucide-react";
 
 function LeftChat() {
   const [showMenu, setShowMenu] = useState(false);
-  const [searchResult, setSearchResult] = useState(null);
+  const [searchResult,  setSearchResult] = useState(null);
   const [currentUserId, setCurrentUserId] = useState(null);
 
-  const { chatData, setChatUser, setMessagesId, messageId } =
+  const { setChatUser, UserChatData, setUserChatData, setMessagesId, messageId } =
     useContext(AppContext);
+  console.log(UserChatData);
 
   const navigate = useNavigate();
 
@@ -55,7 +56,7 @@ function LeftChat() {
 
         if (foundUser.id !== currentUserId) {
           // Check if user is already in chat list
-          const userExist = chatData?.some((chat) => chat.rId === foundUser.id);
+          const userExist = UserChatData?.some((chat) => chat.rId === foundUser.id);
 
           if (!userExist) {
             setSearchResult(foundUser);
@@ -78,60 +79,75 @@ function LeftChat() {
     }
   };
 
-  // Show Chats b/w users:
+  // Show Chats b/w users
   const showChats = async () => {
     if (!searchResult || !currentUserId) return;
 
     try {
-      const messagesRef = collection(db, "MESSAGES");
       const chatRef = collection(db, "CHATS");
 
-      // Create new message document
+      // Fetch current chat list from Firestore
+      const userChatDoc = await getDoc(doc(chatRef, currentUserId));
+      const existingChats = userChatDoc.data()?.chatData || [];
+
+      // ✅ Check if chat already exists
+      const existingChat = existingChats.find((c) => c.rId === searchResult.id);
+      if (existingChat) {
+        setChatUser(searchResult);
+        setMessagesId(existingChat.messageId);
+        return;
+      }
+
+      // ❌ No chat exists? Create a new one
+      const messagesRef = collection(db, "MESSAGES");
       const newMessageRef = doc(messagesRef);
       await setDoc(newMessageRef, {
         createdTime: serverTimestamp(),
         messages: [],
       });
 
-      // Fetch existing chat data for both users
-      const chatSnap1 = await getDoc(doc(chatRef, searchResult.id));
-      const chatSnap2 = await getDoc(doc(chatRef, currentUserId));
-
-      const chatData1 = chatSnap1.data()?.chatData || [];
-      const chatData2 = chatSnap2.data()?.chatData || [];
-
-      const newChatEntry = {
+      const newChat = {
         messageId: newMessageRef.id,
         lastMessage: "",
-        rId: currentUserId,
+        rId: searchResult.id,
         updatedAt: new Date(),
         messageSeen: true,
+        userData: {
+          id: searchResult.id,
+          name: searchResult.name,
+          avatar: searchResult.avatar || "🟣",
+        },
       };
 
-      // Update chat for searchResult
-      await setDoc(
-        doc(chatRef, searchResult.id),
-        { chatData: [...chatData1, newChatEntry] },
-        { merge: true }
-      );
-
-      // Update chat for currentUser
+      // ✅ Update Firestore
       await setDoc(
         doc(chatRef, currentUserId),
-        { chatData: [...chatData2, { ...newChatEntry, rId: searchResult.id }] },
+        { chatData: [...existingChats, newChat] },
+        { merge: true }
+      );
+      await setDoc(
+        doc(chatRef, searchResult.id),
+        {
+          chatData: [
+            ...((await getDoc(doc(chatRef, searchResult.id))).data()
+              ?.chatData || []),
+            { ...newChat, rId: currentUserId },
+          ],
+        },
         { merge: true }
       );
 
-      toast.success("Chat created successfully!");
-      setSearchResult(null);
+      // ✅ **Update `chatData` in State Immediately**
       setChatUser(searchResult);
+      setMessagesId(newMessageRef.id);
+      setUserChatData([...existingChats, newChat]); // 🔥 **This updates UI immediately**
     } catch (error) {
       console.error("Error creating chat:", error);
       toast.error("Failed to create chat");
     }
   };
 
-  // Start chatting by selecting the friend:
+  // Start chatting by selecting the friend
   const selectChat = async (friend) => {
     if (!currentUserId) return;
 
@@ -143,16 +159,21 @@ function LeftChat() {
       const userChatsSnapshot = await getDoc(userChatsRef);
       if (!userChatsSnapshot.exists()) return;
 
-      const chatData = userChatsSnapshot.data()?.chatData || [];
-      const chatEntry = chatData.find((c) => c.messageId === friend.messageId);
+      let chatData = userChatsSnapshot.data()?.chatData || [];
+      const chatIndex = chatData.findIndex(
+        (c) => c.messageId === friend.messageId
+      );
 
-      if (chatEntry && !chatEntry.messageSeen) {
-        await updateDoc(userChatsRef, {
-          chatData: chatData.map((c) =>
-            c.messageId === friend.messageId ? { ...c, messageSeen: true } : c
-          ),
-        });
+      if (chatIndex !== -1) {
+        // ✅ Update existing chat entry instead of adding a new one
+        chatData[chatIndex].messageSeen = true;
+      } else {
+        // ❌ Prevent unnecessary chat creation (this part should not happen ideally)
+        console.warn("Chat entry not found in user data, but it should exist.");
       }
+
+      // ✅ Update Firestore with modified chatData
+      await updateDoc(userChatsRef, { chatData });
     } catch (error) {
       console.error("Error selecting chat:", error);
       toast.error("Failed to select chat");
@@ -212,10 +233,12 @@ function LeftChat() {
               type="text"
               placeholder="Search by exact name..."
               className="w-full outline-none bg-transparent ml-2 text-gray-800"
-              onChange={handleSearch}
               onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  handleSearch(e); // Trigger search only on Enter
+                }
                 if (e.key === "Escape") {
-                  setSearchResult(null);
+                  setSearchResult(null); // Clear search result on Escape
                 }
               }}
             />
@@ -240,7 +263,7 @@ function LeftChat() {
             </div>
           </div>
         ) : (
-          chatData?.map((friend, index) => (
+          UserChatData?.map((friend, index) => (
             <div
               key={index}
               className="flex items-center gap-3 p-3 hover:bg-gray-700 cursor-pointer rounded-lg transition-colors"

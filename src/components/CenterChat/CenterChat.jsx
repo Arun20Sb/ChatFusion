@@ -58,8 +58,11 @@ function CenterChat() {
           // If chat entry exists, update it
           userChatData.chatData[chatIndex].lastMessage = input.slice(0, 27);
           userChatData.chatData[chatIndex].updatedAt = Date.now();
+
           if (id === chatUser.rId) {
-            userChatData.chatData[chatIndex].messageSeen = false; // Mark as unseen for receiver
+            userChatData.chatData[chatIndex].messageSeen = false; // Receiver sees the new message as unseen
+          } else {
+            userChatData.chatData[chatIndex].messageSeen = true; // Sender has already seen their message
           }
         } else {
           // If no existing entry, add a new one
@@ -68,7 +71,7 @@ function CenterChat() {
             lastMessage: input.slice(0, 27),
             rId: chatUser.rId,
             updatedAt: Date.now(),
-            messageSeen: false,
+            messageSeen: id === chatUser.rId ? false : true, // Only sender marks it as seen
           });
         }
 
@@ -123,7 +126,7 @@ function CenterChat() {
         <div className="flex items-center gap-2">
           <input
             value={
-              chatUser.userData?.avatar || chatUser.userData.name.slice(0, 2)
+              chatUser.userData?.avatar || chatUser.userData?.name.slice(0, 2)
             }
             readOnly
             className="w-11 h-11 bg-purple-400 rounded-full text-2xl text-center"
@@ -167,6 +170,7 @@ function CenterChat() {
                       ? userData.avatar
                       : chatUser.userData?.avatar
                   }
+                  readOnly
                   alt="Avatar"
                   className="bg-green-300 w-10 h-10 rounded-full p-1 text-center text-xl"
                 />
@@ -190,6 +194,7 @@ function CenterChat() {
                       ? userData.avatar
                       : chatUser.userData?.avatar
                   }
+                  readOnly
                   alt="Avatar"
                   className="bg-green-300 w-10 h-10 rounded-full p-1 text-center text-xl"
                 />
@@ -206,8 +211,8 @@ function CenterChat() {
       <div className="bg-gray-300 text-gray-900 exo-font left-0 right-0 w-full mb-10">
         <div className="flex gap-2 items-center justify-end py-1 px-3">
           <input
-            onChange={(e) => setInput(e.target.value)}
             value={input}
+            onChange={(e) => setInput(e.target.value)}
             type="text"
             placeholder="Send a message"
             className="flex-1 w-[80%] p-3 bg-gray-300 outline-none border-none"
