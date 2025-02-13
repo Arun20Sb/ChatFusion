@@ -8,7 +8,7 @@ import {
   updateDoc,
 } from "firebase/firestore";
 import { db } from "../../config/FirebaseConfig";
-import ChatPlaceholder from "./ChatPlaceHolder";
+import ChatPlaceholder from "./ChatPlaceholder";
 
 function CenterChat({ setSelectedUser }) {
   const [input, setInput] = useState("");
