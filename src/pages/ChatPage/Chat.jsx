@@ -1,6 +1,6 @@
 import { useState } from "react";
-import LeftChat from "../../components/LeftChat/LeftChat.jsx";
-import CenterChat from "../../components/CenterChat/CenterChat.jsx";
+import LeftChat from "../../components/LeftChat/LeftChat";
+import CenterChat from "../../components/CenterChat/CenterChat";
 
 const Chat = () => {
   const [selectedUser, setSelectedUser] = useState(null);

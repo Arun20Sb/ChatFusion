@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { db } from "../../config/FirebaseConfig";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { toast } from "react-toastify";
-import { AppContext } from "../../context/AppContextProvider.jsx";
+import { AppContext } from "../../context/AppContextProvider";
 import { User, SmilePlus, FileText, Loader, Save } from "lucide-react";
 
 function Profile() {

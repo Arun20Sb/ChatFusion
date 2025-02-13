@@ -1,5 +1,5 @@
 import { useState, useEffect, useContext } from "react";
-import { AppContext } from "../../context/AppContextProvider.jsx";
+import { AppContext } from "../../context/AppContextProvider";
 
 const ChatPlaceholder = () => {
   const { theme, setTheme, userData } = useContext(AppContext);
