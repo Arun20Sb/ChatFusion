@@ -1,6 +1,5 @@
 import { useContext, useEffect, useState } from "react";
 import { AppContext } from "../../context/AppContextProvider.jsx";
-import ChatPlaceholder from "./ChatPlaceHolder.jsx";
 import {
   arrayUnion,
   doc,
@@ -9,6 +8,7 @@ import {
   updateDoc,
 } from "firebase/firestore";
 import { db } from "../../config/FirebaseConfig";
+import ChatPlaceholder from "./ChatPlaceHolder.jsx";
 
 function CenterChat({ setSelectedUser }) {
   const [input, setInput] = useState("");
