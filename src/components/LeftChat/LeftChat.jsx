@@ -15,6 +15,7 @@ import {
 import { AppContext } from "../../context/AppContextProvider";
 import { toast } from "react-toastify";
 import { Search, Settings, LogOut, User, MessageSquare } from "lucide-react";
+import AudioPlayer from "../Music";
 
 function LeftChat({ setSelectedUser }) {
   const [showMenu, setShowMenu] = useState(false);
@@ -196,7 +197,7 @@ function LeftChat({ setSelectedUser }) {
   }
 
   return (
-    <div className="flex relative border-r-2 p-3 border-gray-500 flex-col text-lg h-[85vh]">
+    <div className="flex relative border-r-2 p-3 border-gray-500 flex-col justify-between text-lg h-full">
       <div className="flex justify-between flex-col gap-5 my-3 p-5">
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-2">
@@ -308,6 +309,10 @@ function LeftChat({ setSelectedUser }) {
             </div>
           ))
         )}
+      </div>
+
+      <div className="hidden md:block">
+        <AudioPlayer />
       </div>
     </div>
   );

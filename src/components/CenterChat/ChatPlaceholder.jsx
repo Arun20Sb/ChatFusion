@@ -37,14 +37,21 @@ const ChatPlaceholder = () => {
         Bio - {userData?.bio}
       </h2>
 
-      <div className="text-white p-4 rounded-lg mt-6">
-        <h2 className="text-3xl font-semibold">Rules:</h2>
-        <ul className="list-decimal pl-6 mt-2 space-y-2">
+      <div className="text-white pt-4 pb-4 rounded-lg mt-6">
+        <h2 className="text-3xl font-semibold">📝Rules:</h2>
+        <ul className="list-decimal pl-8 mt-2 space-y-2">
           <li>Make sure your friend is also Signed Up.</li>
           <li>Search your friend&apos;s username.</li>
           <li>Start the CHAT FUSION.</li>
         </ul>
       </div>
+      <h2 className="mt-3 font-bold text-gray-50">
+        <img
+          src="https://img.icons8.com/?size=100&id=hZ4wRp2S2o89&format=png&color=000000"
+          alt="upload icon"
+          className="w-7 h-7 inline-block mr-1"
+        />You can play music 🎵 in Desktop Version.
+      </h2>
 
       <div className="mt-6">
         <h2 className="text-2xl font-semibold text-gray-50">Select Theme:</h2>

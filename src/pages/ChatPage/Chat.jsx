@@ -6,7 +6,7 @@ const Chat = () => {
   const [selectedUser, setSelectedUser] = useState(null);
 
   return (
-    <div className="h-screen grid place-items-center bg-gray-950 pr-5">
+    <div className="min-h-screen grid place-items-center bg-gray-950">
       {/* Desktop View - Show Both */}
       <div className="hidden md:grid w-full h-full grid-cols-[1fr_3fr] bg-gray-950 text-gray-100">
         <LeftChat setSelectedUser={setSelectedUser} />
