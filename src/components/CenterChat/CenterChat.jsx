@@ -120,7 +120,7 @@ function CenterChat({ setSelectedUser }) {
   }, [messagesId]);
 
   return chatUser ? (
-    <div className="relative border-b-2 border-gray-900 text-xl flex flex-col h-full">
+    <div className="relative border-b-2 border-gray-900 text-xl flex flex-col h-screen">
       {/* User Details */}
       <div className="absolute top-0 z-30 bg-gray-950 flex justify-between items-center mt-0 border-b-2 w-full py-3 px-3 border-gray-200 border-t-gray-950 border-2">
         <div className="flex items-center gap-2">
